@@ -52,17 +52,24 @@ async function verifyPermission(fileHandle, withWrite) {
 
 
 window.saveFile = async function(content) {
-  if (fileHandle) {
-    try {
-      const writable = await fileHandle.createWritable();
-      await writable.write(content);
-      await writable.close();
-//      document.querySelector('vaadin-label').innerText = 'Último auto-guardado: ' + new Date().toLocaleTimeString();
-    } catch (err) {
-      console.error('Error al guardar el archivo:', err);
-      alert('No se pudo guardar el archivo.');
+    if(!fileHandle) {
+        return {
+           "error": 'MISSING_FILE',
+           "message": "It's not possible to save because any file was open before"
+        }
     }
-  }
+
+    try {
+        const writable = await fileHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        return { "message": "File saved" };
+    } catch (err) {
+        const json = {};
+        json.error = err.name;
+        json.message = err.message;
+        return json;
+    }
 }
 
 // Abre el archivo desde el sistema de archivos del usuario usando la File System Access API

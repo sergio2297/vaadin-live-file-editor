@@ -47,8 +47,15 @@ public class LiveFileEditor extends Component {
         return jsonParser.toFileInfo(json);
     }
 
-    public void saveFile(final String content) {
-        getElement().executeJs("mySaveFile($0)", content);
+    // TODO: What if I try to save content and there isn't a file loaded
+    // TODO: What if the file I opened before it's remove and now it's impossible to save it's content
+    public CompletableFuture<Boolean> saveFile(final String content) {
+        CompletableFuture<Boolean> fileSaved = new CompletableFuture<>();
+
+        getElement().executeJs("return saveFile($0)", content)
+                .then(json -> fileSaved.complete(true));
+
+        return fileSaved;
     }
 
 }
