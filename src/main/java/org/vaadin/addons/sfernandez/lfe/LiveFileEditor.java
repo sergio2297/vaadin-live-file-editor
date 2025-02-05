@@ -23,6 +23,8 @@ public class LiveFileEditor extends Component {
     //---- Constructor ----
     public LiveFileEditor() {
         getElement().appendChild(new Div("Hello").getElement());
+
+        addDetachListener(detach -> closeFile()); // TODO: It might not be necessary because of a missing opened file
     }
 
     //---- Methods ----
@@ -39,6 +41,15 @@ public class LiveFileEditor extends Component {
         return openedFile;
     }
 
+    public CompletableFuture<Boolean> closeFile() {
+        CompletableFuture<Boolean> fileClosed = new CompletableFuture<>();
+
+        getElement().executeJs("return await closeFile();")
+                .then(json -> fileClosed.complete(true)); // TODO: error catching
+
+        return fileClosed;
+    }
+
     private JsonValue allowedFileTypesAsJson() {
         return jsonParser.asJson(setup.getAllowedFileTypes());
     }
@@ -47,7 +58,7 @@ public class LiveFileEditor extends Component {
         return jsonParser.toFileInfo(json);
     }
 
-    // TODO: What if I try to save content and there isn't a file loaded
+    // TODO: What if I try to save content and there isn't a file loaded => Save it as new could be a possibility
     // TODO: What if the file I opened before it's remove and now it's impossible to save it's content
     public CompletableFuture<Boolean> saveFile(final String content) {
         CompletableFuture<Boolean> fileSaved = new CompletableFuture<>();
