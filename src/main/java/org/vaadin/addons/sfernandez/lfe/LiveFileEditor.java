@@ -1,50 +1,80 @@
 package org.vaadin.addons.sfernandez.lfe;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.dependency.JsModule;
-import com.vaadin.flow.component.html.Div;
 import elemental.json.JsonValue;
-import org.checkerframework.checker.units.qual.C;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
 import org.vaadin.addons.sfernandez.lfe.parameters.JsonParameterParser;
 import org.vaadin.addons.sfernandez.lfe.setup.LiveFileEditorSetup;
 
 import java.util.concurrent.CompletableFuture;
 
-@Tag("div")
 @JsModule("./src/live-file-editor.js") // TODO: Puede que se haga abstracta para que sea ptra quien decida el esquema
-public class LiveFileEditor extends Component {
+public class LiveFileEditor {
 
     //---- Attributes ----
+    private final Component attachment;
+
     private final JsonParameterParser jsonParser = new JsonParameterParser();
     private LiveFileEditorSetup setup = new LiveFileEditorSetup();
 
-    //---- Constructor ----
-    public LiveFileEditor() {
-        getElement().appendChild(new Div("Hello").getElement());
+    private boolean isWorking = false;
 
-        addDetachListener(detach -> closeFile()); // TODO: It might not be necessary because of a missing opened file
+    //---- Constructor ----
+    public LiveFileEditor(Component attachment) {
+        this.attachment = attachment;
+        init();
+    }
+
+    private void init() {
+        attachment.addAttachListener(attach -> start());
+        attachment.addDetachListener(detach -> stop());
+    }
+
+    private void start() {
+        isWorking = true;
+    }
+
+    private void stop() {
+        isWorking = false;
+        closeFile();  // TODO: It might not be necessary because of a missing opened file
     }
 
     //---- Methods ----
+    public boolean isWorking() {
+        return isWorking;
+    }
+
+    public boolean isNotWorking() {
+        return !isWorking();
+    }
+
     public void setup(final LiveFileEditorSetup setup) {
         this.setup = setup;
     }
 
+    private void assertIsWorking() {
+        if(isNotWorking())
+            throw new LiveFileEditorException("Error. It's necessary to attach the attachment before using the LiveFileEditor.");
+    }
+
     public CompletableFuture<FileInfo> openFile() {
+        assertIsWorking();
+
         CompletableFuture<FileInfo> openedFile = new CompletableFuture<>();
 
-        getElement().executeJs("return await openFile($0);", allowedFileTypesAsJson())
+        attachment.getElement().executeJs("return await openFile($0);", allowedFileTypesAsJson())
                 .then(json -> openedFile.complete(toFileInfo(json))); // TODO: error catching
 
         return openedFile;
     }
 
     public CompletableFuture<Boolean> closeFile() {
+        assertIsWorking();
+
         CompletableFuture<Boolean> fileClosed = new CompletableFuture<>();
 
-        getElement().executeJs("return await closeFile();")
+        attachment.getElement().executeJs("return await closeFile();")
                 .then(json -> fileClosed.complete(true)); // TODO: error catching
 
         return fileClosed;
@@ -61,9 +91,11 @@ public class LiveFileEditor extends Component {
     // TODO: What if I try to save content and there isn't a file loaded => Save it as new could be a possibility
     // TODO: What if the file I opened before it's remove and now it's impossible to save it's content
     public CompletableFuture<Boolean> saveFile(final String content) {
+        assertIsWorking();
+
         CompletableFuture<Boolean> fileSaved = new CompletableFuture<>();
 
-        getElement().executeJs("return saveFile($0)", content)
+        attachment.getElement().executeJs("return saveFile($0)", content)
                 .then(json -> fileSaved.complete(true));
 
         return fileSaved;
