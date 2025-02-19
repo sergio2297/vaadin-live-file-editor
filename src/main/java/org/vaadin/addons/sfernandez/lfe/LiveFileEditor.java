@@ -3,6 +3,7 @@ package org.vaadin.addons.sfernandez.lfe;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
 import elemental.json.JsonValue;
+import org.vaadin.addons.sfernandez.lfe.components.autosave.LfeAutosave;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
 import org.vaadin.addons.sfernandez.lfe.parameters.JsonParameterParser;
 import org.vaadin.addons.sfernandez.lfe.setup.LiveFileEditorSetup;
@@ -19,6 +20,7 @@ public class LiveFileEditor {
     private LiveFileEditorSetup setup = new LiveFileEditorSetup();
 
     private boolean isWorking = false;
+    private final LfeAutosave autosave = new LfeAutosave(this);
 
     //---- Constructor ----
     public LiveFileEditor(Component attachment) {
@@ -37,10 +39,16 @@ public class LiveFileEditor {
 
     private void stop() {
         isWorking = false;
-        closeFile();  // TODO: It might not be necessary because of a missing opened file
+
+        if(isWorking()) // TODO: && hay fichero abierto
+            closeFile();
     }
 
     //---- Methods ----
+    public Component getAttachment() {
+        return attachment;
+    }
+
     public boolean isWorking() {
         return isWorking;
     }
@@ -66,6 +74,11 @@ public class LiveFileEditor {
         attachment.getElement().executeJs("return await openFile($0);", allowedFileTypesAsJson())
                 .then(json -> openedFile.complete(toFileInfo(json))); // TODO: error catching
 
+        openedFile.thenRun(() -> {
+            if(autosave().isEnabled())
+                autosave().start();
+        });
+
         return openedFile;
     }
 
@@ -76,6 +89,11 @@ public class LiveFileEditor {
 
         attachment.getElement().executeJs("return await closeFile();")
                 .then(json -> fileClosed.complete(true)); // TODO: error catching
+
+        fileClosed.thenRun(() -> {
+            if(autosave().isRunning())
+                autosave().stop();
+        });
 
         return fileClosed;
     }
@@ -99,6 +117,10 @@ public class LiveFileEditor {
                 .then(json -> fileSaved.complete(true));
 
         return fileSaved;
+    }
+
+    public LfeAutosave autosave() {
+        return autosave;
     }
 
 }
