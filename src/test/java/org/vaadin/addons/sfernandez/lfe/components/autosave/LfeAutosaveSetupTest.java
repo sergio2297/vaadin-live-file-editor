@@ -2,67 +2,70 @@ package org.vaadin.addons.sfernandez.lfe.components.autosave;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.vaadin.addons.sfernandez.lfe.LiveFileEditorException;
 
 import java.time.Duration;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class LfeAutosaveSetupTest {
 
     //---- Attributes ----
-    private LfeAutosaveSetup setup;
+    private LfeAutosaveSetup.Builder builder;
+
+    //---- Fixtures ----
+    private final Supplier<String> fooDataSupplier = String::new;
 
     //---- Configuration ----
     @BeforeEach
     void setup() {
-        this.setup = new LfeAutosaveSetup();
+        this.builder = new LfeAutosaveSetup.Builder()
+                .dataToSaveSupplier(fooDataSupplier);
     }
 
     //---- Tests ----
     @Test
     void frequency_isFiveSeconds_byDefaultTest() {
-        LfeAutosaveSetup setup = new LfeAutosaveSetup();
+        LfeAutosaveSetup setup = builder.build();
 
-        assertThat(setup.getFrequency()).isEqualTo(Duration.ofSeconds(5));
+        assertThat(setup.frequency()).isEqualTo(Duration.ofSeconds(5));
     }
 
     @Test
-    void afterSetFrequency_itsValueHasChangedTest() {
-        var frequency = Duration.ofSeconds(10);
-
-        setup.setFrequency(frequency);
-
-        assertThat(setup.getFrequency()).isEqualTo(frequency);
+    void build_withNullFrequency_throwsExceptionTest() {
+        assertThrows(LiveFileEditorException.class, () -> builder.frequency(null).build());
     }
 
     @Test
-    void contentToSaveSupplier_isNull_byDefaultTest() {
-        LfeAutosaveSetup setup = new LfeAutosaveSetup();
-
-        assertThat(setup.dataToSave()).isNull();
+    void build_withNegativeOrZeroFrequency_throwsExceptionTest() {
+        assertThrows(LiveFileEditorException.class, () -> builder.frequency(Duration.ofMillis(-1)).build());
+        assertThrows(LiveFileEditorException.class, () -> builder.frequency(Duration.ofMillis(0)).build());
     }
 
     @Test
-    void afterSetContentToSaveSupplier_itsValueHasChangedTest() {
-        Supplier<String> supplier = String::new;
-
-        setup.setDataToSave(supplier);
-
-        assertThat(setup.dataToSave()).isSameAs(supplier);
+    void build_withNullDataToSaveSupplier_throwsExceptionTest() {
+        assertThrows(LiveFileEditorException.class, () -> builder.dataToSaveSupplier(null).build());
     }
 
     @Test
-    void alterUiPollInterval_isDisabled_byDefaultTest() {
-        LfeAutosaveSetup setup = new LfeAutosaveSetup();
+    void alterUiPollInterval_isNotAllowed_byDefaultTest() {
+        LfeAutosaveSetup setup = builder.build();
 
         assertThat(setup.isAllowedToAlterUiPollInterval()).isFalse();
     }
 
     @Test
-    void afterSetEnableAlterUiPollInterval_itsValueHasChangedTest() {
-        setup.setAllowedToAlterUiPollInterval(true);
+    void build_worksTest() {
+        LfeAutosaveSetup setup = builder
+                .frequency(Duration.ofSeconds(2))
+                .dataToSaveSupplier(fooDataSupplier)
+                .allowToAlterUiPollInterval(true)
+                .build();
 
+        assertThat(setup.frequency()).isEqualTo(Duration.ofSeconds(2));
+        assertThat(setup.dataToSave()).isSameAs(fooDataSupplier);
         assertThat(setup.isAllowedToAlterUiPollInterval()).isTrue();
     }
 

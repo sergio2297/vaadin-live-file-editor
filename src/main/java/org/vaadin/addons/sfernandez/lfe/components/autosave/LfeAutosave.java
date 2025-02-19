@@ -76,7 +76,7 @@ public final class LfeAutosave {
         configureCurrentUi();
         ensureSufficientUiPollInterval();
 
-        scheduled = executorService.scheduleAtFixedRate(this::autosave, 0L, setup.getFrequency().toMillis(), TimeUnit.MILLISECONDS);
+        scheduled = executorService.scheduleAtFixedRate(this::autosave, 0L, setup.frequency().toMillis(), TimeUnit.MILLISECONDS);
     }
 
     private void configureCurrentUi() {
@@ -88,7 +88,7 @@ public final class LfeAutosave {
     }
 
     private void ensureSufficientUiPollInterval() {
-        int autosaveFrequency = (int) setup.getFrequency().toMillis();
+        int autosaveFrequency = (int) setup.frequency().toMillis();
         int uiPollInterval = currentUi.getPollInterval();
 
         if(!setup.isAllowedToAlterUiPollInterval() && (uiPollInterval == -1 || uiPollInterval > autosaveFrequency)) {

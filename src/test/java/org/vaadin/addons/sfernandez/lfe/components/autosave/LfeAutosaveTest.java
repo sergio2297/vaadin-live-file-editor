@@ -25,9 +25,10 @@ class LfeAutosaveTest {
     //---- Configuration ----
     @BeforeEach
     void setup() {
-        LfeAutosaveSetup setup = new LfeAutosaveSetup();
-        setup.setFrequency(Duration.ofMillis(10L));
-        setup.setDataToSave(String::new);
+        LfeAutosaveSetup setup = new LfeAutosaveSetup.Builder()
+                .frequency(Duration.ofMillis(10L))
+                .dataToSaveSupplier(String::new)
+                .build();
 
         mockedEditor = Mockito.mock(LiveFileEditor.class);
         Mockito.when(mockedEditor.isNotWorking()).thenReturn(false);
@@ -62,14 +63,6 @@ class LfeAutosaveTest {
         autosave.stop();
 
         assertThat(autosave.isRunning()).isFalse();
-    }
-
-    @Test
-    void setup_withoutContentToSaveSupplier_throwsExceptionTest() {
-        LfeAutosaveSetup setup = new LfeAutosaveSetup();
-        setup.setDataToSave(null);
-
-        assertThrows(LiveFileEditorException.class, () -> autosave.setup(setup));
     }
 
     @Test
