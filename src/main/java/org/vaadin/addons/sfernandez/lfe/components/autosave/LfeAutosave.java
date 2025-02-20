@@ -23,11 +23,7 @@ public final class LfeAutosave {
     private final ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1);
     private final List<LfeAutosaveListener> autosaveListeners = new ArrayList<>();
 
-    private UI currentUi = null;
-    private int previousUiPollInterval = -1;
-    private ScheduledFuture<?> scheduled = null;
-    private CompletableFuture<Void> saveInProgress = null;
-    private String previousContentSaved = null;
+    private final AutosaveProcess process = new AutosaveProcess();
 
     //---- Constructor ----
     public LfeAutosave(LiveFileEditor editor) {
@@ -49,15 +45,12 @@ public final class LfeAutosave {
         return isEnabled;
     }
 
-    public void setup(final LfeAutosaveSetup setup) {
-        if(setup.dataToSave() == null)
-            throw new LiveFileEditorException("Error. A content to save supplier is mandatory.");
-
+    public void setup(LfeAutosaveSetup setup) {
         this.setup = setup;
     }
 
     public boolean isRunning() {
-        return scheduled != null && !scheduled.isDone();
+        return process.isRunning();
     }
 
     public void start() {
@@ -73,84 +66,11 @@ public final class LfeAutosave {
         if(isRunning())
             stop();
 
-        configureCurrentUi();
-        ensureSufficientUiPollInterval();
-
-        scheduled = executorService.scheduleAtFixedRate(this::autosave, 0L, setup.frequency().toMillis(), TimeUnit.MILLISECONDS);
-    }
-
-    private void configureCurrentUi() {
-        Optional<UI> ui = editor.getAttachment().getUI();
-        if(ui.isEmpty())
-            throw new LiveFileEditorException("Error. It's not possible to autosave content due to the editor isn't attached to an UI.");
-
-        currentUi = ui.get();
-    }
-
-    private void ensureSufficientUiPollInterval() {
-        int autosaveFrequency = (int) setup.frequency().toMillis();
-        int uiPollInterval = currentUi.getPollInterval();
-
-        if(!setup.isAllowedToAlterUiPollInterval() && (uiPollInterval == -1 || uiPollInterval > autosaveFrequency)) {
-            System.out.println("Warning! Ui poll interval is disabled or is larger than the autosave process frequency. This could end causing outdated saves.");
-            return;
-        }
-
-        previousUiPollInterval = uiPollInterval;
-        if(previousUiPollInterval == -1 || previousUiPollInterval > autosaveFrequency)
-            currentUi.setPollInterval(autosaveFrequency);
+        process.start();
     }
 
     public void stop() {
-        undoChangesInUiPollInterval();
-        currentUi = null;
-        previousContentSaved = null;
-        previousUiPollInterval = -1;
-        saveInProgress = null;
-        scheduled.cancel(true);
-    }
-
-    private void undoChangesInUiPollInterval() {
-        if(!setup.isAllowedToAlterUiPollInterval())
-            return;
-
-        currentUi.setPollInterval(previousUiPollInterval);
-    }
-
-    public synchronized void autosave() {
-        if(autosaveIsNotNecessary())
-            return;
-
-        currentUi.access(() -> {
-            String contentToSave = getContentToSave();
-            saveInProgress = editor.saveFile(contentToSave)
-                   .thenAccept(fileSaved -> {
-                       saveInProgress.complete(null);
-
-                       if(fileSaved)
-                           previousContentSaved = contentToSave;
-
-                       fire(new LfeAutosaveEvent(!fileSaved, contentToSave));
-                   });
-        });
-
-        try {
-            saveInProgress.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private boolean autosaveIsNotNecessary() {
-        return contentToSaveHasNotChanged();
-    }
-
-    private boolean contentToSaveHasNotChanged() {
-        return previousContentSaved != null && previousContentSaved.equals(getContentToSave());
-    }
-
-    private String getContentToSave() {
-        return setup.dataToSave().get();
+        process.stop();
     }
 
     public Registration addAutosaveListener(final LfeAutosaveListener listener) {
@@ -166,4 +86,115 @@ public final class LfeAutosave {
         return executorService;
     }
 
+    /* ***************************************
+     *          AUTOSAVE PROCESS
+     * **************************************/
+    class AutosaveProcess {
+
+        //---- Attributes ----
+        private ScheduledFuture<?> scheduled = null;
+
+        private UI ui = null;
+        private int previousUiPollInterval = -1;
+
+        private CompletableFuture<Void> saveInProgress = null;
+        private String previousDataSaved = null;
+
+        //---- Constructor ----
+        public AutosaveProcess() {}
+
+        //---- Methods ----
+        public boolean isRunning() {
+            return scheduled != null && !scheduled.isDone();
+        }
+
+        public void start() {
+            catchEditorAttachedUi();
+            ensureSufficientUiPollInterval();
+
+            scheduled = executorService.scheduleAtFixedRate(this::autosave, 0L, setup.frequency().toMillis(), TimeUnit.MILLISECONDS);
+        }
+
+        private void catchEditorAttachedUi() {
+            Optional<UI> ui = editor.getAttachment().getUI();
+            if(ui.isEmpty())
+                throw new LiveFileEditorException("Error. It's not possible to autosave content due to the editor isn't attached to an UI.");
+
+            this.ui = ui.get();
+        }
+
+        private void ensureSufficientUiPollInterval() {
+            int autosaveFrequency = (int) setup.frequency().toMillis();
+            int uiPollInterval = ui.getPollInterval();
+
+            if(!setup.isAllowedToAlterUiPollInterval() && (uiPollInterval == -1 || uiPollInterval > autosaveFrequency)) {
+                System.out.println("Warning! Ui poll interval is disabled or is larger than the autosave process frequency. This could end causing outdated saves.");
+                return;
+            }
+
+            previousUiPollInterval = uiPollInterval;
+            if(previousUiPollInterval == -1 || previousUiPollInterval > autosaveFrequency)
+                ui.setPollInterval(autosaveFrequency);
+        }
+
+        public void stop() {
+            undoChangesInUiPollInterval();
+            reset();
+
+            scheduled.cancel(true);
+        }
+
+        private void undoChangesInUiPollInterval() {
+            if(!setup.isAllowedToAlterUiPollInterval())
+                return;
+
+            ui.setPollInterval(previousUiPollInterval);
+        }
+
+        private void reset() {
+            ui = null;
+            previousUiPollInterval = -1;
+
+            saveInProgress.complete(null);
+            saveInProgress = null;
+            previousDataSaved = null;
+        }
+
+        public synchronized void autosave() {
+            if(autosaveIsNotNecessary())
+                return;
+
+            ui.access(() -> {
+                String contentToSave = getDataToSave();
+                saveInProgress = editor.saveFile(contentToSave)
+                        .thenAccept(fileSaved -> {
+                            saveInProgress.complete(null);
+
+                            if(fileSaved)
+                                previousDataSaved = contentToSave;
+
+                            fire(new LfeAutosaveEvent(!fileSaved, contentToSave));
+                        });
+            });
+
+            try {
+                saveInProgress.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private boolean autosaveIsNotNecessary() {
+            return dataToSaveHasNotChanged();
+        }
+
+        private boolean dataToSaveHasNotChanged() {
+            return previousDataSaved != null && previousDataSaved.equals(getDataToSave());
+        }
+
+        private String getDataToSave() {
+            return setup.dataToSave().get();
+        }
+
+    }
 }
