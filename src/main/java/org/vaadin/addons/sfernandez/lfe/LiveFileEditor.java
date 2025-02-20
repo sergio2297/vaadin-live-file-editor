@@ -38,10 +38,10 @@ public class LiveFileEditor {
     }
 
     private void stop() {
-        isWorking = false;
-
         if(isWorking()) // TODO: && hay fichero abierto
             closeFile();
+
+        isWorking = false;
     }
 
     //---- Methods ----
@@ -85,15 +85,13 @@ public class LiveFileEditor {
     public CompletableFuture<Boolean> closeFile() {
         assertIsWorking();
 
+        if(autosave().isRunning())
+            autosave().stop();
+
         CompletableFuture<Boolean> fileClosed = new CompletableFuture<>();
 
         attachment.getElement().executeJs("return await closeFile();")
                 .then(json -> fileClosed.complete(true)); // TODO: error catching
-
-        fileClosed.thenRun(() -> {
-            if(autosave().isRunning())
-                autosave().stop();
-        });
 
         return fileClosed;
     }
