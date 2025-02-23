@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
+/**
+ * <p>{@link LiveFileEditor}'s component used to manage the autosave process.</p>
+ */
 public final class LfeAutosave {
 
     //---- Attributes ----
@@ -26,6 +29,10 @@ public final class LfeAutosave {
     private final AutosaveProcess process = new AutosaveProcess();
 
     //---- Constructor ----
+    /**
+     * <p>Create a new {@link LfeAutosave} for the received editor</p>
+     * @param editor {@link LiveFileEditor} to manage
+     */
     public LfeAutosave(LiveFileEditor editor) {
         this.editor = editor;
 
@@ -37,22 +44,47 @@ public final class LfeAutosave {
     }
 
     //---- Methods ----
+    /**
+     * <p>Enables the autosave process. Autosave must be enabled to work after calling {@link #start()}</p>
+     * <p>Default: false</p>
+     * @param enable true to enable autosave
+     */
     public void setEnabled(boolean enable) {
         this.isEnabled = enable;
     }
 
+    /**
+     * @return true if the autosave process is enable
+     */
     public boolean isEnabled() {
         return isEnabled;
     }
 
+    /**
+     * <p>Establish the setup to use. Must not be null.</p>
+     * <p>It is necessary to configure the autosave before starting it, if not, an exception will be thrown.</p>
+     * @param setup Setup
+     */
     public void setup(LfeAutosaveSetup setup) {
         this.setup = setup;
     }
 
+    /**
+     * @return true if the autosave process is running. To achieve this it's necessary to {@link #setEnabled(boolean)} and
+     * call {@link #start()} previously and in that order
+     */
     public boolean isRunning() {
         return process.isRunning();
     }
 
+    /**
+     * <p>Start the autosave process.</p>
+     * <p>If the autosave is not enabled, then the process will not start. No exception is thrown.</p>
+     * <p>Depending on the {@link LfeAutosaveSetup} the UI poll interval will be altered to be enough to execute the
+     * autosave process properly. When the autosave process is stopped then the poll interval will be restored.</p>
+     * <p>If it is already running, then the current process is stopped before starting a new one.</p>
+     * @throws LiveFileEditorException if no setup has been added or if the attached editor {@link LiveFileEditor#isNotWorking()}
+     */
     public void start() {
         if(!isEnabled)
             return;
@@ -69,10 +101,20 @@ public final class LfeAutosave {
         process.start();
     }
 
+    /**
+     * <p>Stop the autosave process.</p>
+     * <p>If the process isn't running, nothing happens.</p>
+     * <p>Depending on the {@link LfeAutosaveSetup} the UI poll interval will be restored or not after stopping the process.</p>
+     */
     public void stop() {
         process.stop();
     }
 
+    /**
+     * <p>Add a new listener that will be notified every time that an autosave event occur.</p>
+     * @param listener Listener to add
+     * @return the registration of the listener
+     */
     public Registration addAutosaveListener(final LfeAutosaveListener listener) {
         return Registration.addAndRemove(autosaveListeners, listener);
     }
@@ -86,10 +128,15 @@ public final class LfeAutosave {
         return executorService;
     }
 
+    @VisibleForTesting
+    CompletableFuture<Void> getSaveInProgress() {
+        return process.saveInProgress;
+    }
+
     /* ***************************************
      *          AUTOSAVE PROCESS
      * **************************************/
-    class AutosaveProcess {
+    private class AutosaveProcess {
 
         //---- Attributes ----
         private ScheduledFuture<?> scheduled = null;
@@ -127,13 +174,13 @@ public final class LfeAutosave {
             int autosaveFrequency = (int) setup.frequency().toMillis();
             int uiPollInterval = ui.getPollInterval();
 
-            if(!setup.isAllowedToAlterUiPollInterval() && (uiPollInterval == -1 || uiPollInterval > autosaveFrequency)) {
+            if(!setup.isAllowedToAlterUiPollInterval() && (uiPollInterval == -1 || uiPollInterval < autosaveFrequency)) {
                 System.out.println("Warning! Ui poll interval is disabled or is larger than the autosave process frequency. This could end causing outdated saves.");
                 return;
             }
 
             previousUiPollInterval = uiPollInterval;
-            if(previousUiPollInterval == -1 || previousUiPollInterval > autosaveFrequency)
+            if(previousUiPollInterval == -1 || previousUiPollInterval < autosaveFrequency)
                 ui.setPollInterval(autosaveFrequency);
         }
 
@@ -155,7 +202,8 @@ public final class LfeAutosave {
             ui = null;
             previousUiPollInterval = -1;
 
-            saveInProgress.complete(null);
+            if(saveInProgress != null)
+                saveInProgress.cancel(true);
             saveInProgress = null;
             previousDataSaved = null;
         }
@@ -168,8 +216,6 @@ public final class LfeAutosave {
                 String contentToSave = getDataToSave();
                 saveInProgress = editor.saveFile(contentToSave)
                         .thenAccept(fileSaved -> {
-                            saveInProgress.complete(null);
-
                             if(fileSaved)
                                 previousDataSaved = contentToSave;
 
@@ -180,7 +226,7 @@ public final class LfeAutosave {
             try {
                 saveInProgress.get();
             } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("This should never happen");
             }
         }
 
