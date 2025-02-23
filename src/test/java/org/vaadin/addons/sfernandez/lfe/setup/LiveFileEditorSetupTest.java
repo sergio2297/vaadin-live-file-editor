@@ -18,27 +18,34 @@ class LiveFileEditorSetupTest {
 
     //---- Tests ----
     @Test
-    void allFileExtensions_areAllowed_byDefaultTest() {
+    void allFileTypes_areAllowed_byDefaultTest() {
         LiveFileEditorSetup setup = new LiveFileEditorSetup();
 
-        assertThat(setup.isAllFileExtensionsAllowed()).isTrue();
+        assertThat(setup.isAllFileTypesAllowed()).isTrue();
     }
 
     @Test
-    void allowedFileExtensions_areEmpty_byDefaultTest() {
+    void allowedFileTypes_areEmpty_byDefaultTest() {
         LiveFileEditorSetup setup = new LiveFileEditorSetup();
 
         assertThat(setup.getAllowedFileTypes()).isEmpty();
     }
 
     @Test
-    void allowAllFileExtensions_clearCurrentAllowedFileExtensionsTest() {
+    void allowAllFileTypes_clearCurrentAllowedFileTypesTest() {
         setup.setAllowedFileTypes(new FileType());
         assertThat(setup.getAllowedFileTypes()).isNotEmpty();
 
-        setup.allowAllFileExtensions();
+        setup.allowAllFileTypes();
 
         assertThat(setup.getAllowedFileTypes()).isEmpty();
+    }
+    
+    @Test
+    void setAllowedFileTypes_toNull_allowAllFileTypesTest() {
+        setup.setAllowedFileTypes((FileType[]) null);
+
+        assertThat(setup.isAllFileTypesAllowed()).isTrue();
     }
 
 }

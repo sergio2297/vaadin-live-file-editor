@@ -118,6 +118,7 @@ class JsonParameterParserTest {
         FileType[] fileTypes = {
                 new FileType("Images", "image/*", ".png", ".jpg", ".gif"),
                 new FileType("Text", "text/plain"),
+                new FileType("Text", "text/plain", (String[]) null),
                 new FileType(null, "application/zip", ".zip")
         };
 
@@ -129,6 +130,12 @@ class JsonParameterParserTest {
                             "description": "Images",
                             "accept": {
                                 "image/*": [".png", ".jpg", ".gif"]
+                            }
+                        },
+                        {
+                            "description": "Text",
+                            "accept": {
+                                "text/plain": []
                             }
                         },
                         {

@@ -16,11 +16,11 @@ public class LiveFileEditorSetup {
                 : allowedFileTypes;
     }
 
-    public boolean isAllFileExtensionsAllowed() {
+    public boolean isAllFileTypesAllowed() {
         return allowedFileTypes.length == 0;
     }
 
-    public void allowAllFileExtensions() {
+    public void allowAllFileTypes() {
         this.allowedFileTypes = new FileType[0];
     }
 
