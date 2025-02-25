@@ -90,15 +90,3 @@ window.closeFile = async function() {
         return json;
     }
 }
-
-// Comienza el auto-guardado cada 5 segundos
-window.otherStartAutoSave = function() {
-  if (autoSaveInterval) {
-    clearInterval(autoSaveInterval);
-  }
-
-  autoSaveInterval = setInterval(() => {
-    saveFile(document.querySelector('vaadin-text-area').value);
-  }, 5000);  // Guardado cada 5 segundos
-}
-
