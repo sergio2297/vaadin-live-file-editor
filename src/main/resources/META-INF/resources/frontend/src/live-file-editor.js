@@ -18,7 +18,7 @@ window.openFile = async function(fileTypes) {
             return json;
         } else {
             return {
-                'error': 'PERMISSION_NOT_GRANTED',
+                'error': 'PermissionNotGrantedError',
                 'message': 'User did not grant permission'
             };
         }
@@ -54,8 +54,8 @@ async function verifyPermission(fileHandle, withWrite) {
 window.saveFile = async function(content) {
     if(!fileHandle) {
         return {
-           "error": 'MISSING_FILE',
-           "message": "It's not possible to save because any file was open before"
+           "error": 'MissingFileError',
+           "message": "It's not possible to save because no file was open before"
         }
     }
 
@@ -75,8 +75,8 @@ window.saveFile = async function(content) {
 window.closeFile = async function() {
     if(!fileHandle) {
         return {
-           "error": 'MISSING_FILE',
-           "message": "There isn't any file to close"
+           "error": 'MissingFileError',
+           "message": "There isn't no file to close"
         }
     }
 
