@@ -1,4 +1,4 @@
-package org.vaadin.addons.sfernandez.lfe.components.error;
+package org.vaadin.addons.sfernandez.lfe.error;
 
 /**
  * <p>A {@link LfeError} keeps information about an error that occurred (almost always) during the execution of a
@@ -7,6 +7,11 @@ package org.vaadin.addons.sfernandez.lfe.components.error;
  * @param message Message that gives more details about the error
  */
 public record LfeError(Type type, String message) {
+
+    //---- Constructor ----
+    public LfeError(LfeOperationException exception) {
+        this(exception.getErrorType(), exception.getMessage());
+    }
 
     /**
      * <p>Type of an LfeError</p>

@@ -5,7 +5,7 @@ import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import es.sfernandez.library4j.types.DataSize;
-import org.vaadin.addons.sfernandez.lfe.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 import org.vaadin.addons.sfernandez.lfe.setup.FileType;
 
 public class JsonParameterParser {

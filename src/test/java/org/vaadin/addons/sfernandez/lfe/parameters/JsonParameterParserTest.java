@@ -4,7 +4,7 @@ import elemental.json.Json;
 import elemental.json.JsonValue;
 import es.sfernandez.library4j.types.DataSize;
 import org.junit.jupiter.api.Test;
-import org.vaadin.addons.sfernandez.lfe.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 import org.vaadin.addons.sfernandez.lfe.setup.FileType;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -1,4 +1,4 @@
-package org.vaadin.addons.sfernandez.lfe.components.autosave;
+package org.vaadin.addons.sfernandez.lfe;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.Command;
@@ -6,8 +6,8 @@ import com.vaadin.flow.shared.Registration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.vaadin.addons.sfernandez.lfe.LiveFileEditor;
-import org.vaadin.addons.sfernandez.lfe.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.setup.LfeAutosaveSetup;
 
 import java.io.PrintStream;
 import java.time.Duration;
@@ -129,6 +129,11 @@ class LfeAutosaveTest {
         Mockito.when(mockedUi.getUI()).thenReturn(Optional.empty());
 
         assertThrows(LiveFileEditorException.class, autosave::start);
+    }
+
+    @Test
+    void start_withoutHavingPreviouslyOpenedAFile_throwsAnExceptionTest() {
+        // TODO
     }
 
     @Test

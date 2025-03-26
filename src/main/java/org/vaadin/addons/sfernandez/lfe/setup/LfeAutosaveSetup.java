@@ -1,6 +1,7 @@
-package org.vaadin.addons.sfernandez.lfe.components.autosave;
+package org.vaadin.addons.sfernandez.lfe.setup;
 
-import org.vaadin.addons.sfernandez.lfe.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.LfeAutosave;
+import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 
 import java.time.Duration;
 import java.util.function.Supplier;

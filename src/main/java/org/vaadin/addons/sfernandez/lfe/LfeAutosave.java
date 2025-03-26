@@ -1,10 +1,14 @@
-package org.vaadin.addons.sfernandez.lfe.components.autosave;
+package org.vaadin.addons.sfernandez.lfe;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.shared.Registration;
-import org.vaadin.addons.sfernandez.lfe.LiveFileEditor;
-import org.vaadin.addons.sfernandez.lfe.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LfeError;
+import org.vaadin.addons.sfernandez.lfe.error.LfeOperationException;
+import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
+import org.vaadin.addons.sfernandez.lfe.events.LfeAutosaveListener;
+import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.setup.LfeAutosaveSetup;
 
 import java.lang.ref.Cleaner;
 import java.util.ArrayList;
@@ -33,7 +37,7 @@ public final class LfeAutosave {
      * <p>Create a new {@link LfeAutosave} for the received editor</p>
      * @param editor {@link LiveFileEditor} to manage
      */
-    public LfeAutosave(LiveFileEditor editor) {
+    LfeAutosave(LiveFileEditor editor) {
         this.editor = editor;
 
         configureCleanUpResources();
@@ -119,7 +123,7 @@ public final class LfeAutosave {
         return Registration.addAndRemove(autosaveListeners, listener);
     }
 
-    private void fire(final LfeAutosaveEvent event) {
+    private void fire(final LfeSaveFileEvent event) {
         autosaveListeners.forEach(listener -> listener.onAutosave(event));
     }
 

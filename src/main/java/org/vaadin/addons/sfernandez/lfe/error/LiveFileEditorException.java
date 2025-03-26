@@ -1,4 +1,4 @@
-package org.vaadin.addons.sfernandez.lfe;
+package org.vaadin.addons.sfernandez.lfe.error;
 
 public class LiveFileEditorException extends RuntimeException {
 

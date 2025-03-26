@@ -1,8 +1,8 @@
-package org.vaadin.addons.sfernandez.lfe.components.autosave;
+package org.vaadin.addons.sfernandez.lfe.setup;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.vaadin.addons.sfernandez.lfe.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 
 import java.time.Duration;
 import java.util.function.Supplier;

@@ -1,4 +1,4 @@
-package org.vaadin.addons.sfernandez.lfe.components.error;
+package org.vaadin.addons.sfernandez.lfe.error;
 
 import org.junit.jupiter.api.Test;
 

@@ -3,7 +3,8 @@ package org.vaadin.addons.sfernandez.lfe;
 import elemental.json.JsonObject;
 import elemental.json.JsonString;
 import elemental.json.JsonValue;
-import org.vaadin.addons.sfernandez.lfe.components.error.LfeError;
+import org.vaadin.addons.sfernandez.lfe.error.LfeError;
+import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 
 import java.util.Optional;
 
