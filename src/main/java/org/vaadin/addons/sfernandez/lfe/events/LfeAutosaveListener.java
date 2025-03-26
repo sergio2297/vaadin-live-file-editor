@@ -1,7 +1,7 @@
-package org.vaadin.addons.sfernandez.lfe.components.autosave;
+package org.vaadin.addons.sfernandez.lfe.events;
 
 /**
- * <p>Listener that receives a {@link LfeAutosaveEvent}</p>
+ * <p>Listener that receives a {@link LfeSaveFileEvent}</p>
  */
 @FunctionalInterface
 public interface LfeAutosaveListener {
@@ -10,6 +10,6 @@ public interface LfeAutosaveListener {
      * <p>Notifies when an autosave operation has been completed</p>
      * @param event the autosave event
      */
-    void onAutosave(final LfeAutosaveEvent event);
+    void onAutosave(final LfeSaveFileEvent event);
 
 }
