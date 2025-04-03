@@ -2,8 +2,6 @@ package org.vaadin.addons.sfernandez.lfe;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.vaadin.flow.component.UI;
-import org.vaadin.addons.sfernandez.lfe.error.LfeError;
-import org.vaadin.addons.sfernandez.lfe.error.LfeOperationException;
 import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 import org.vaadin.addons.sfernandez.lfe.events.LfeAutosaveWorkingStateChangeEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
@@ -124,7 +122,7 @@ public final class LfeAutosave {
     }
 
     @VisibleForTesting
-    CompletableFuture<Void> getSaveInProgress() {
+    CompletableFuture<Optional<String>> getSaveInProgress() {
         return process.saveInProgress;
     }
 
@@ -139,7 +137,7 @@ public final class LfeAutosave {
         private UI ui = null;
         private int previousUiPollInterval = -1;
 
-        private CompletableFuture<Void> saveInProgress = null;
+        private CompletableFuture<Optional<String>> saveInProgress;
         private String previousDataSaved = null;
 
         //---- Constructor ----
@@ -154,7 +152,7 @@ public final class LfeAutosave {
             catchEditorAttachedUi();
             ensureSufficientUiPollInterval();
 
-            scheduled = executorService.scheduleAtFixedRate(this::autosave, 0L, setup.frequency().toMillis(), TimeUnit.MILLISECONDS);
+            scheduled = executorService.scheduleAtFixedRate(this::routine, 0L, setup.frequency().toMillis(), TimeUnit.MILLISECONDS);
             notifyWorkingStateChanged();
         }
 
@@ -178,6 +176,14 @@ public final class LfeAutosave {
             previousUiPollInterval = uiPollInterval;
             if(previousUiPollInterval == -1 || previousUiPollInterval < autosaveFrequency)
                 ui.setPollInterval(autosaveFrequency);
+        }
+
+        private void routine() {
+            try {
+                autosave();
+            } catch (Exception e) {
+                start();
+            }
         }
 
         public void stop() {
@@ -209,27 +215,20 @@ public final class LfeAutosave {
             if(autosaveIsNotNecessary())
                 return;
 
-            ui.access(() -> {
-                String contentToSave = getDataToSave();
-                saveInProgress = editor.saveFile(contentToSave)
-                        .thenAccept(savedContent ->
-                                savedContent.ifPresent(content -> {
-                                    previousDataSaved = content;
-                                    fire(new LfeSaveFileEvent(contentToSave));
-                                })
-                        )
-                        .exceptionally(throwable -> {
-                            if(throwable instanceof LfeOperationException operationError)
-                                fire(new LfeSaveFileEvent(contentToSave, new LfeError(operationError)));
-
-                            return null;
-                        });
-            });
-
             try {
-                saveInProgress.get();
+                ui.access(() ->
+                        saveInProgress = editor.saveFile(getDataToSave())
+                ).get(ui.getPollInterval(), TimeUnit.MILLISECONDS);
+
+                saveInProgress.get().ifPresent(savedContent -> {
+                    previousDataSaved = savedContent;
+                    fire(new LfeSaveFileEvent(savedContent));
+                });
             } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
                 throw new RuntimeException("This should never happen");
+            } catch (TimeoutException e) {
+                e.printStackTrace();
             }
         }
 
