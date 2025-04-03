@@ -4,7 +4,7 @@ package org.vaadin.addons.sfernandez.lfe.events;
  * <p>Listener that receives a {@link LfeSaveFileEvent}</p>
  */
 @FunctionalInterface
-public interface LfeAutosaveListener {
+public interface LfeAutosaveFileListener {
 
     /**
      * <p>Notifies when an autosave operation has been completed</p>

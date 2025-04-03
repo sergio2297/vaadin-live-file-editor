@@ -2,17 +2,14 @@ package org.vaadin.addons.sfernandez.lfe;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.vaadin.flow.component.UI;
-import com.vaadin.flow.shared.Registration;
 import org.vaadin.addons.sfernandez.lfe.error.LfeError;
 import org.vaadin.addons.sfernandez.lfe.error.LfeOperationException;
-import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
-import org.vaadin.addons.sfernandez.lfe.events.LfeAutosaveListener;
 import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.events.LfeAutosaveWorkingStateChangeEvent;
+import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
 import org.vaadin.addons.sfernandez.lfe.setup.LfeAutosaveSetup;
 
 import java.lang.ref.Cleaner;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
@@ -28,7 +25,6 @@ public final class LfeAutosave {
     private LfeAutosaveSetup setup = null;
 
     private final ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1);
-    private final List<LfeAutosaveListener> autosaveListeners = new ArrayList<>();
 
     private final AutosaveProcess process = new AutosaveProcess();
 
@@ -77,7 +73,7 @@ public final class LfeAutosave {
      * @return true if the autosave process is running. To achieve this it's necessary to {@link #setEnabled(boolean)} and
      * call {@link #start()} previously and in that order
      */
-    public boolean isRunning() {
+    public boolean isWorking() {
         return process.isRunning();
     }
 
@@ -99,7 +95,7 @@ public final class LfeAutosave {
         if(editor.isNotWorking())
             throw new LiveFileEditorException("Error. Editor must be working before starting autosave.");
 
-        if(isRunning())
+        if(isWorking())
             stop();
 
         process.start();
@@ -114,17 +110,12 @@ public final class LfeAutosave {
         process.stop();
     }
 
-    /**
-     * <p>Add a new listener that will be notified every time that an autosave event occur.</p>
-     * @param listener Listener to add
-     * @return the registration of the listener
-     */
-    public Registration addAutosaveListener(final LfeAutosaveListener listener) {
-        return Registration.addAndRemove(autosaveListeners, listener);
+    private void notifyWorkingStateChanged() {
+        editor.observer().notifyAutosaveWorkingStateChangeEvent(new LfeAutosaveWorkingStateChangeEvent(isWorking()));
     }
 
     private void fire(final LfeSaveFileEvent event) {
-        autosaveListeners.forEach(listener -> listener.onAutosave(event));
+        editor.observer().notifyAutosaveFileEvent(event);
     }
 
     @VisibleForTesting
@@ -164,6 +155,7 @@ public final class LfeAutosave {
             ensureSufficientUiPollInterval();
 
             scheduled = executorService.scheduleAtFixedRate(this::autosave, 0L, setup.frequency().toMillis(), TimeUnit.MILLISECONDS);
+            notifyWorkingStateChanged();
         }
 
         private void catchEditorAttachedUi() {
@@ -193,6 +185,7 @@ public final class LfeAutosave {
             reset();
 
             scheduled.cancel(true);
+            notifyWorkingStateChanged();
         }
 
         private void undoChangesInUiPollInterval() {
@@ -219,11 +212,17 @@ public final class LfeAutosave {
             ui.access(() -> {
                 String contentToSave = getDataToSave();
                 saveInProgress = editor.saveFile(contentToSave)
-                        .thenAccept(fileSaved -> {
-                            if(fileSaved)
-                                previousDataSaved = contentToSave;
+                        .thenAccept(savedContent ->
+                                savedContent.ifPresent(content -> {
+                                    previousDataSaved = content;
+                                    fire(new LfeSaveFileEvent(contentToSave));
+                                })
+                        )
+                        .exceptionally(throwable -> {
+                            if(throwable instanceof LfeOperationException operationError)
+                                fire(new LfeSaveFileEvent(contentToSave, new LfeError(operationError)));
 
-                            fire(new LfeAutosaveEvent(!fileSaved, contentToSave));
+                            return null;
                         });
             });
 

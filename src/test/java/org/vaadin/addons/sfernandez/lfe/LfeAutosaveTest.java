@@ -2,11 +2,11 @@ package org.vaadin.addons.sfernandez.lfe;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.Command;
-import com.vaadin.flow.shared.Registration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
 import org.vaadin.addons.sfernandez.lfe.setup.LfeAutosaveSetup;
 
 import java.io.PrintStream;
@@ -24,6 +24,7 @@ class LfeAutosaveTest {
 
     //---- Attributes ----
     private LiveFileEditor mockedEditor;
+    private LfeObserver mockedObserver;
     private UI mockedUi;
 
     private LfeAutosave autosave;
@@ -43,10 +44,13 @@ class LfeAutosaveTest {
             return null;
         });
 
+        mockedObserver = Mockito.mock(LfeObserver.class);
+
         mockedEditor = Mockito.mock(LiveFileEditor.class);
         Mockito.when(mockedEditor.isWorking()).thenReturn(true);
         Mockito.when(mockedEditor.isNotWorking()).thenReturn(false);
         Mockito.when(mockedEditor.getAttachment()).thenReturn(mockedUi);
+        Mockito.when(mockedEditor.observer()).thenReturn(mockedObserver);
 
         autosave = new LfeAutosave(mockedEditor);
         autosave.setEnabled(true);
@@ -83,14 +87,14 @@ class LfeAutosaveTest {
 
         autosave.setEnabled(true);
 
-        assertThat(autosave.isRunning()).isFalse();
+        assertThat(autosave.isWorking()).isFalse();
     }
 
     @Test
     void autosave_isNotRunning_byDefaultTest() {
         LfeAutosave autosave = new LfeAutosave(mockedEditor);
 
-        assertThat(autosave.isRunning()).isFalse();
+        assertThat(autosave.isWorking()).isFalse();
     }
 
     @Test
@@ -98,7 +102,7 @@ class LfeAutosaveTest {
         autosave.setEnabled(false);
         autosave.start();
 
-        assertThat(autosave.isRunning()).isFalse();
+        assertThat(autosave.isWorking()).isFalse();
     }
 
     @Test
@@ -140,7 +144,7 @@ class LfeAutosaveTest {
     void afterStart_itIsRunningTest() {
         autosave.start();
 
-        assertThat(autosave.isRunning()).isTrue();
+        assertThat(autosave.isWorking()).isTrue();
     }
 
     @Test
@@ -241,7 +245,7 @@ class LfeAutosaveTest {
         autosave.start();
         autosave.stop();
 
-        assertThat(autosave.isRunning()).isFalse();
+        assertThat(autosave.isWorking()).isFalse();
     }
 
     @Test
@@ -396,16 +400,16 @@ class LfeAutosaveTest {
     @Test
     void addedAutosaveListener_isNotifiedWithAutosaveStatus_whenAutosaveOccurTest() throws ExecutionException, InterruptedException {
         Mockito.when(mockedEditor.saveFile(Mockito.any()))
-                .then(invocation -> CompletableFuture.completedFuture(false));
-        CompletableFuture<Boolean> autosaveFailed = new CompletableFuture<>();
-        autosave.addAutosaveListener(event ->
-                autosaveFailed.complete(event.failed())
-        );
+                .then(invocation -> CompletableFuture.completedFuture(null));
+
+        CompletableFuture<LfeSaveFileEvent> autosaveOperation = new CompletableFuture<>();
+        Mockito.doAnswer(invocation -> autosaveOperation.complete(invocation.getArgument(0)))
+                .when(mockedObserver).notifyAutosaveFileEvent(Mockito.any());
 
         autosave.start();
 
         try {
-            assertThat(autosaveFailed.get(50L, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(autosaveOperation.get(50L, TimeUnit.MILLISECONDS)).isNotNull();
         } catch (TimeoutException e) {
             fail("Error. Autosave process haven't started yet.");
         }
@@ -413,36 +417,21 @@ class LfeAutosaveTest {
 
     @Test
     void addedAutosaveListener_isNotifiedWithDataToSave_whenAutosaveOccurTest() throws ExecutionException, InterruptedException {
-        Mockito.when(mockedEditor.saveFile(Mockito.any()))
-                .then(invocation -> CompletableFuture.completedFuture(false));
-        CompletableFuture<String> autosaveFailed = new CompletableFuture<>();
-        autosave.addAutosaveListener(event ->
-                autosaveFailed.complete(event.data())
+        String dataToSave = "Data to save";
+        autosave.setup(new LfeAutosaveSetup.Builder()
+                .dataToSaveSupplier(() -> dataToSave)
+                .build()
         );
+        Mockito.when(mockedEditor.saveFile(dataToSave))
+                .then(invocation -> CompletableFuture.completedFuture(null));
+        CompletableFuture<LfeSaveFileEvent> autosaveOperation = new CompletableFuture<>();
+        Mockito.doAnswer(invocation -> autosaveOperation.complete(invocation.getArgument(0)))
+                .when(mockedObserver).notifyAutosaveFileEvent(Mockito.any());
 
         autosave.start();
 
         try {
-            assertThat(autosaveFailed.get(50L, TimeUnit.MILLISECONDS)).isEqualTo("");
-        } catch (TimeoutException e) {
-            fail("Error. Autosave process haven't started yet.");
-        }
-    }
-
-    @Test
-    void removedAutosaveListener_isNotNotified_whenAutosaveOccurTest() throws ExecutionException, InterruptedException {
-        CompletableFuture<Void> autosaveExecuted = new CompletableFuture<>();
-        Mockito.when(mockedEditor.saveFile(Mockito.any()))
-                .then(invocation -> autosaveExecuted.complete(null));
-        Registration registration = autosave.addAutosaveListener(event ->
-                fail("Listener shouldn't be notified because it has been removed")
-        );
-
-        registration.remove();
-        autosave.start();
-
-        try {
-            autosaveExecuted.get(50L, TimeUnit.MILLISECONDS);
+            assertThat(autosaveOperation.get(50L, TimeUnit.MILLISECONDS).data()).isEqualTo(dataToSave);
         } catch (TimeoutException e) {
             fail("Error. Autosave process haven't started yet.");
         }

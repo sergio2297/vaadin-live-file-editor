@@ -1,13 +1,19 @@
 package org.vaadin.addons.sfernandez.lfe;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
 import elemental.json.JsonValue;
-import org.vaadin.addons.sfernandez.lfe.components.autosave.LfeAutosave;
+import org.vaadin.addons.sfernandez.lfe.events.LfeCloseFileEvent;
+import org.vaadin.addons.sfernandez.lfe.events.LfeOpenFileEvent;
+import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
+import org.vaadin.addons.sfernandez.lfe.events.LfeWorkingStateChangeEvent;
+import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
 import org.vaadin.addons.sfernandez.lfe.parameters.JsonParameterParser;
 import org.vaadin.addons.sfernandez.lfe.setup.LiveFileEditorSetup;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @JsModule("./src/live-file-editor.js") // TODO: Puede que se haga abstracta para que sea ptra quien decida el esquema
@@ -17,15 +23,25 @@ public class LiveFileEditor {
     private final Component attachment;
 
     private final JsonParameterParser jsonParser = new JsonParameterParser();
-    private LiveFileEditorSetup setup = new LiveFileEditorSetup();
 
     private boolean isWorking = false;
+    private LiveFileEditorSetup setup = new LiveFileEditorSetup();
+
+    private final LfeOperationHandler operationHandler;
+    private final LfeObserver observer = new LfeObserver();
     private final LfeAutosave autosave = new LfeAutosave(this);
 
     //---- Constructor ----
-    public LiveFileEditor(Component attachment) {
+    @VisibleForTesting
+    LiveFileEditor(Component attachment, LfeOperationHandler operationHandler) {
         this.attachment = attachment;
+        this.operationHandler = operationHandler;
+
         init();
+    }
+
+    public LiveFileEditor(Component attachment) {
+        this(attachment, new LfeOperationHandler());
     }
 
     private void init() {
@@ -35,13 +51,22 @@ public class LiveFileEditor {
 
     private void start() {
         isWorking = true;
+        notifyWorkingStateChanged();
     }
 
     private void stop() {
-        if(isWorking()) // TODO: && hay fichero abierto
-            closeFile();
+//        if(isWorking()) // TODO: && hay fichero abierto
+//            closeFile();
+
+        if(autosave().isWorking())
+            autosave().stop();
 
         isWorking = false;
+        notifyWorkingStateChanged();
+    }
+
+    private void notifyWorkingStateChanged() {
+        observer.notifyWorkingStateChangeEvent(new LfeWorkingStateChangeEvent(isWorking));
     }
 
     //---- Methods ----
@@ -66,59 +91,93 @@ public class LiveFileEditor {
             throw new LiveFileEditorException("Error. It's necessary to attach the attachment before using the LiveFileEditor.");
     }
 
-    public CompletableFuture<FileInfo> openFile() {
+    public CompletableFuture<Optional<FileInfo>> openFile() {
         assertIsWorking();
 
-        CompletableFuture<FileInfo> openedFile = new CompletableFuture<>();
+        CompletableFuture<LfeOpenFileEvent> opening = operationHandler.treatOpenFileJsRequest(sendOpenFileJsRequest());
 
-        attachment.getElement().executeJs("return await openFile($0);", allowedFileTypesAsJson())
-                .then(json -> openedFile.complete(toFileInfo(json))); // TODO: error catching
+        opening.thenAccept(event -> {
+            observer.notifyOpenFileEvent(event);
 
-        openedFile.thenRun(() -> {
-            if(autosave().isEnabled())
+            if(!event.failed() && autosave().isEnabled())
                 autosave().start();
         });
 
-        return openedFile;
+        return opening.thenApply(LfeOpenFileEvent::fileInfo);
     }
 
-    public CompletableFuture<Boolean> closeFile() {
+    private CompletableFuture<JsonValue> sendOpenFileJsRequest() {
+        return attachment.getElement()
+                .executeJs("return await openFile($0);", allowedFileTypesAsJson())
+                .toCompletableFuture();
+    }
+
+    public CompletableFuture<Optional<FileInfo>> closeFile() {
         assertIsWorking();
 
-        if(autosave().isRunning())
+        if(autosave().isWorking())
             autosave().stop();
 
-        CompletableFuture<Boolean> fileClosed = new CompletableFuture<>();
+        CompletableFuture<LfeCloseFileEvent> closing = operationHandler.treatCloseFileJsRequest(sendCloseFileJsRequest());
 
-        attachment.getElement().executeJs("return await closeFile();")
-                .then(json -> fileClosed.complete(true)); // TODO: error catching
+        closing.thenAccept(observer::notifyCloseFileEvent);
 
-        return fileClosed;
+        return closing.thenApply(LfeCloseFileEvent::fileInfo);
+    }
+
+    private CompletableFuture<JsonValue> sendCloseFileJsRequest() {
+        return attachment.getElement()
+                .executeJs("return await closeFile();")
+                .toCompletableFuture();
     }
 
     private JsonValue allowedFileTypesAsJson() {
         return jsonParser.asJson(setup.getAllowedFileTypes());
     }
 
-    private FileInfo toFileInfo(JsonValue json) {
-        return jsonParser.toFileInfo(json);
-    }
-
     // TODO: What if I try to save content and there isn't a file loaded => Save it as new could be a possibility
     // TODO: What if the file I opened before it's remove and now it's impossible to save it's content
-    public CompletableFuture<Boolean> saveFile(final String content) {
+    public CompletableFuture<Optional<String>> saveFile(final String content) {
         assertIsWorking();
 
-        CompletableFuture<Boolean> fileSaved = new CompletableFuture<>();
+        CompletableFuture<LfeSaveFileEvent> saving = operationHandler.treatSaveFileJsRequest(
+                sendSaveFileJsRequest(content), content
+        );
 
-        attachment.getElement().executeJs("return saveFile($0)", content)
-                .then(json -> fileSaved.complete(true));
+        saving.thenAccept(observer::notifySaveFileEvent)
+                .exceptionally(throwable -> {
+                    throwable.printStackTrace();
+                    return null;
+                });
 
-        return fileSaved;
+        return saving.thenApply(event ->
+                event.failed()
+                        ? Optional.empty()
+                        : Optional.ofNullable(event.data())
+        );
+    }
+
+    private CompletableFuture<JsonValue> sendSaveFileJsRequest(final String content) {
+        return attachment.getElement()
+                .executeJs("return saveFile($0)", content)
+                .toCompletableFuture();
+    }
+
+    // TODO: Observer won't be the place to get the state
+    public LfeState getState() {
+        return new LfeState(
+                isWorking(),
+                false,
+                autosave().isWorking()
+        );
     }
 
     public LfeAutosave autosave() {
         return autosave;
+    }
+
+    public LfeObserver observer() {
+        return observer;
     }
 
 }

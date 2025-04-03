@@ -9,6 +9,10 @@ package org.vaadin.addons.sfernandez.lfe.error;
 public record LfeError(Type type, String message) {
 
     //---- Constructor ----
+    /**
+     * <p>Creates a new LfeError from the information contained in the exception passed as argument</p>
+     * @param exception Exception
+     */
     public LfeError(LfeOperationException exception) {
         this(exception.getErrorType(), exception.getMessage());
     }

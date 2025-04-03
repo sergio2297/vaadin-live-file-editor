@@ -7,7 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.vaadin.addons.sfernandez.lfe.components.error.LfeError;
+import org.vaadin.addons.sfernandez.lfe.error.LfeError;
+import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
