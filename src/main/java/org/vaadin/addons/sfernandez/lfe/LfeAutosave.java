@@ -136,6 +136,7 @@ public final class LfeAutosave {
 
         private UI ui = null;
         private int previousUiPollInterval = -1;
+        private boolean pollIntervalWarningShownPreviously = false;
 
         private CompletableFuture<Optional<String>> saveInProgress;
         private String previousDataSaved = null;
@@ -168,8 +169,11 @@ public final class LfeAutosave {
             int autosaveFrequency = (int) setup.frequency().toMillis();
             int uiPollInterval = ui.getPollInterval();
 
-            if(!setup.isAllowedToAlterUiPollInterval() && (uiPollInterval == -1 || uiPollInterval < autosaveFrequency)) {
+            if(!pollIntervalWarningShownPreviously
+                    && !setup.isAllowedToAlterUiPollInterval()
+                    && (uiPollInterval == -1 || uiPollInterval < autosaveFrequency)) {
                 System.out.println("Warning! Ui poll interval is disabled or is larger than the autosave process frequency. This could end causing outdated saves.");
+                pollIntervalWarningShownPreviously = true;
                 return;
             }
 
