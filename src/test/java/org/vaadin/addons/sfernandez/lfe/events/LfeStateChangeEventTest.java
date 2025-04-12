@@ -9,7 +9,7 @@ class LfeStateChangeEventTest {
 
     //---- Fixtures ----
     private LfeState dummyState() {
-        return new LfeState(true, false, false);
+        return new LfeState();
     }
 
     //---- Tests ----

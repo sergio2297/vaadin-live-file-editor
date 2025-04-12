@@ -1,90 +1,41 @@
 package org.vaadin.addons.sfernandez.lfe;
 
-import com.vaadin.flow.component.*;
-import es.sfernandez.library4j.types.DataSize;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.vaadin.addons.sfernandez.lfe.error.LfeError;
 import org.vaadin.addons.sfernandez.lfe.events.LfeCloseFileEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeOpenFileEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
-import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
 import org.vaadin.addons.sfernandez.lfe.setup.LfeAutosaveSetup;
 
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 
 class LiveFileEditor_ObserverTest {
 
-    //---- Constants and Definitions ----
-    @Tag("div")
-    private static final class MockedUi extends Component {
-
-        //---- Attributes ----
-        private final UI mockedUi = Mockito.mock(UI.class);
-
-        //---- Constructor ----
-        public MockedUi() {
-//            Mockito.when(mockedUi.access(any())).then(invocation -> {
-//                ((Runnable) invocation.getArgument(0)).run();
-//                return null;
-//            });
-        }
-
-        //---- Methods ----
-        void attach() {
-            super.fireEvent(new AttachEvent(mockedUi, true));
-        }
-
-        void detach() {
-            super.fireEvent(new DetachEvent(mockedUi));
-        }
-
-        @Override
-        public Optional<UI> getUI() {
-            return Optional.of(mockedUi);
-        }
-
-    }
-
     //---- Attributes ----
-    private MockedUi mockedUi;
+    private UiMock ui;
+    private OperationHandlerMock operationHandler;
 
     private LiveFileEditor editor;
     private LfeObserver observer;
-    private LfeOperationHandler mockedOperationHandler;
-
-    //---- Fixtures ----
-    private LfeError dummyError() {
-        return new LfeError(LfeError.Type.Other.UNKNOWN, "Unknown error");
-    }
-
-    private FileInfo dummyFileInfo() {
-        return new FileInfo("file.txt", DataSize.ofBytes(96), "text/plain", "File content");
-    }
 
     //---- Configuration ----
     @BeforeEach
     void setup() {
-        mockedUi = new MockedUi();
-        mockedOperationHandler = Mockito.mock(LfeOperationHandler.class);
+        ui = new UiMock();
+        operationHandler = new OperationHandlerMock();
 
-        editor = new LiveFileEditor(mockedUi, mockedOperationHandler);
+        editor = new LiveFileEditor(ui, operationHandler.get());
         observer = editor.observer();
 
         editor.autosave().setEnabled(true);
         editor.autosave().setup(new LfeAutosaveSetup.Builder().dataToSaveSupplier(String::new).build());
 
-        mockedUi.attach();
+        ui.attach();
     }
 
     //---- Methods ----
@@ -92,7 +43,7 @@ class LiveFileEditor_ObserverTest {
     //---- Tests ----
     @Test
     void observerNotifies_whenEditorStopWorking_becauseOfDetachTest() {
-        MockedUi ui = new MockedUi();
+        UiMock ui = new UiMock();
         LiveFileEditor editor = new LiveFileEditor(ui);
         LfeObserver observer = editor.observer();
 
@@ -110,7 +61,7 @@ class LiveFileEditor_ObserverTest {
 
     @Test
     void observerNotifies_whenEditorStartsWorking_becauseOfAttachTest() {
-        MockedUi ui = new MockedUi();
+        UiMock ui = new UiMock();
         LiveFileEditor editor = new LiveFileEditor(ui);
         LfeObserver observer = editor.observer();
 
@@ -127,12 +78,10 @@ class LiveFileEditor_ObserverTest {
 
     @Test
     void observerNotifies_whenEditorOpensAFileSuccessfullyTest() throws ExecutionException, InterruptedException, TimeoutException {
-        LfeOpenFileEvent successfulEvent = new LfeOpenFileEvent(dummyFileInfo());
-        Mockito.when(mockedOperationHandler.treatOpenFileJsRequest(any()))
-                .thenReturn(CompletableFuture.completedFuture(successfulEvent));
+        LfeOpenFileEvent eventThatWillBeFired = operationHandler.mockOpenFileToSuccess();
 
         AtomicBoolean isNotified = new AtomicBoolean(false);
-        observer.addOpenFileListener(event -> isNotified.set(event == successfulEvent));
+        observer.addOpenFileListener(event -> isNotified.set(event == eventThatWillBeFired));
 
         editor.openFile().get(50, TimeUnit.MILLISECONDS);
 
@@ -141,12 +90,10 @@ class LiveFileEditor_ObserverTest {
 
     @Test
     void observerNotifies_whenEditorOpensAFileUnsuccessfullyTest() throws ExecutionException, InterruptedException, TimeoutException {
-        LfeOpenFileEvent unsuccessfulEvent = new LfeOpenFileEvent(dummyError());
-        Mockito.when(mockedOperationHandler.treatOpenFileJsRequest(any()))
-                .thenReturn(CompletableFuture.completedFuture(unsuccessfulEvent));
+        LfeOpenFileEvent eventThatWillBeFired = operationHandler.mockOpenFileToFail();
 
         AtomicBoolean isNotified = new AtomicBoolean(false);
-        observer.addOpenFileListener(event -> isNotified.set(event == unsuccessfulEvent));
+        observer.addOpenFileListener(event -> isNotified.set(event == eventThatWillBeFired));
 
         editor.openFile().get(50, TimeUnit.MILLISECONDS);
 
@@ -155,12 +102,10 @@ class LiveFileEditor_ObserverTest {
 
     @Test
     void observerNotifies_whenEditorClosesAFileSuccessfullyTest() throws ExecutionException, InterruptedException, TimeoutException {
-        LfeCloseFileEvent successfulEvent = new LfeCloseFileEvent(dummyFileInfo());
-        Mockito.when(mockedOperationHandler.treatCloseFileJsRequest(any()))
-                .thenReturn(CompletableFuture.completedFuture(successfulEvent));
+        LfeCloseFileEvent eventThatWillBeFired = operationHandler.mockCloseFileToSuccess();
 
         AtomicBoolean isNotified = new AtomicBoolean(false);
-        observer.addCloseFileListener(event -> isNotified.set(event == successfulEvent));
+        observer.addCloseFileListener(event -> isNotified.set(event == eventThatWillBeFired));
 
         editor.closeFile().get(50, TimeUnit.MILLISECONDS);
 
@@ -169,12 +114,10 @@ class LiveFileEditor_ObserverTest {
 
     @Test
     void observerNotifies_whenEditorClosesAFileUnsuccessfullyTest() throws ExecutionException, InterruptedException, TimeoutException {
-        LfeCloseFileEvent unsuccessfulEvent = new LfeCloseFileEvent(dummyError());
-        Mockito.when(mockedOperationHandler.treatCloseFileJsRequest(any()))
-                .thenReturn(CompletableFuture.completedFuture(unsuccessfulEvent));
+        LfeCloseFileEvent eventThatWillBeFired = operationHandler.mockCloseFileToFail();
 
         AtomicBoolean isNotified = new AtomicBoolean(false);
-        observer.addCloseFileListener(event -> isNotified.set(event == unsuccessfulEvent));
+        observer.addCloseFileListener(event -> isNotified.set(event == eventThatWillBeFired));
 
         editor.closeFile().get(50, TimeUnit.MILLISECONDS);
 
@@ -183,12 +126,10 @@ class LiveFileEditor_ObserverTest {
 
     @Test
     void observerNotifies_whenEditorSavesFilesContentSuccessfullyTest() throws ExecutionException, InterruptedException, TimeoutException {
-        LfeSaveFileEvent successfulEvent = new LfeSaveFileEvent("Saved data");
-        Mockito.when(mockedOperationHandler.treatSaveFileJsRequest(any(), anyString()))
-                .thenReturn(CompletableFuture.completedFuture(successfulEvent));
+        LfeSaveFileEvent eventThatWillBeFired = operationHandler.mockSaveFileToSuccess("Saved data");
 
         AtomicBoolean isNotified = new AtomicBoolean(false);
-        observer.addSaveFileListener(event -> isNotified.set(event == successfulEvent));
+        observer.addSaveFileListener(event -> isNotified.set(event == eventThatWillBeFired));
 
         editor.saveFile("Saved data").get(50, TimeUnit.MILLISECONDS);
 
@@ -197,12 +138,10 @@ class LiveFileEditor_ObserverTest {
 
     @Test
     void observerNotifies_whenEditorSavesFilesContentUnsuccessfullyTest() throws ExecutionException, InterruptedException, TimeoutException {
-        LfeSaveFileEvent unsuccessfulEvent = new LfeSaveFileEvent("Unsaved data", dummyError());
-        Mockito.when(mockedOperationHandler.treatSaveFileJsRequest(any(), anyString()))
-                .thenReturn(CompletableFuture.completedFuture(unsuccessfulEvent));
+        LfeSaveFileEvent eventThatWillBeFired = operationHandler.mockSaveFileToFail("Unsaved data");
 
         AtomicBoolean isNotified = new AtomicBoolean(false);
-        observer.addSaveFileListener(event -> isNotified.set(event == unsuccessfulEvent));
+        observer.addSaveFileListener(event -> isNotified.set(event == eventThatWillBeFired));
 
         editor.saveFile("Unsaved data").get(50, TimeUnit.MILLISECONDS);
 
@@ -230,7 +169,7 @@ class LiveFileEditor_ObserverTest {
         AtomicBoolean isWorking = new AtomicBoolean(true);
         observer.addAutosaveWorkingStateChangeListener(event -> isWorking.set(event.isWorking()));
 
-        mockedUi.detach();
+        ui.detach();
 
         assertThat(isWorking).isFalse();
     }
@@ -239,8 +178,7 @@ class LiveFileEditor_ObserverTest {
     void observerNotifies_whenAutosaveStopsWorking_becauseOfClosingFileTest() throws ExecutionException, InterruptedException, TimeoutException {
         editor.autosave().start();
         assertThat(editor.autosave().isWorking()).isTrue();
-        Mockito.when(mockedOperationHandler.treatCloseFileJsRequest(any()))
-                .thenReturn(CompletableFuture.completedFuture(new LfeCloseFileEvent(dummyFileInfo())));
+        operationHandler.mockCloseFileToSuccess();
 
         AtomicBoolean isWorking = new AtomicBoolean(true);
         observer.addAutosaveWorkingStateChangeListener(event -> isWorking.set(event.isWorking()));
@@ -265,8 +203,7 @@ class LiveFileEditor_ObserverTest {
     @Test
     void observerNotifies_whenAutosaveStartsWorking_becauseOpeningFileTest() throws ExecutionException, InterruptedException, TimeoutException {
         assertThat(editor.autosave().isWorking()).isFalse();
-        Mockito.when(mockedOperationHandler.treatOpenFileJsRequest(any()))
-                .thenReturn(CompletableFuture.completedFuture(new LfeOpenFileEvent(dummyFileInfo())));
+        operationHandler.mockOpenFileToSuccess();
 
         AtomicBoolean isWorking = new AtomicBoolean(false);
         observer.addAutosaveWorkingStateChangeListener(event -> isWorking.set(event.isWorking()));

@@ -155,6 +155,7 @@ public final class LfeAutosave {
 
             scheduled = executorService.scheduleAtFixedRate(this::routine, 0L, setup.frequency().toMillis(), TimeUnit.MILLISECONDS);
             notifyWorkingStateChanged();
+            editor.updateState();
         }
 
         private void catchEditorAttachedUi() {
@@ -196,6 +197,7 @@ public final class LfeAutosave {
 
             scheduled.cancel(true);
             notifyWorkingStateChanged();
+            editor.updateState();
         }
 
         private void undoChangesInUiPollInterval() {

@@ -4,19 +4,17 @@ import com.google.common.annotations.VisibleForTesting;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
 import elemental.json.JsonValue;
-import org.vaadin.addons.sfernandez.lfe.events.LfeCloseFileEvent;
-import org.vaadin.addons.sfernandez.lfe.events.LfeOpenFileEvent;
-import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
-import org.vaadin.addons.sfernandez.lfe.events.LfeWorkingStateChangeEvent;
+import org.vaadin.addons.sfernandez.lfe.events.*;
 import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
 import org.vaadin.addons.sfernandez.lfe.parameters.JsonParameterParser;
 import org.vaadin.addons.sfernandez.lfe.setup.LiveFileEditorSetup;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-@JsModule("./src/live-file-editor.js") // TODO: Puede que se haga abstracta para que sea ptra quien decida el esquema
+@JsModule("./src/live-file-editor.js")
 public class LiveFileEditor {
 
     //---- Attributes ----
@@ -30,6 +28,7 @@ public class LiveFileEditor {
     private final LfeOperationHandler operationHandler;
     private final LfeObserver observer = new LfeObserver();
     private final LfeAutosave autosave = new LfeAutosave(this);
+    private LfeState state = new LfeState();
 
     //---- Constructor ----
     @VisibleForTesting
@@ -52,17 +51,19 @@ public class LiveFileEditor {
     private void start() {
         isWorking = true;
         notifyWorkingStateChanged();
+        updateState();
     }
 
     private void stop() {
-//        if(isWorking()) // TODO: && hay fichero abierto
-//            closeFile();
+        if(isWorking() && state().thereIsFileOpened())
+            closeFile();
 
         if(autosave().isWorking())
             autosave().stop();
 
         isWorking = false;
         notifyWorkingStateChanged();
+        updateState();
     }
 
     private void notifyWorkingStateChanged() {
@@ -96,9 +97,9 @@ public class LiveFileEditor {
 
         CompletableFuture<LfeOpenFileEvent> opening = operationHandler.treatOpenFileJsRequest(sendOpenFileJsRequest());
 
+        opening.thenAccept(observer::notifyOpenFileEvent);
+        opening.thenAccept(this::updateState);
         opening.thenAccept(event -> {
-            observer.notifyOpenFileEvent(event);
-
             if(!event.failed() && autosave().isEnabled())
                 autosave().start();
         });
@@ -121,6 +122,7 @@ public class LiveFileEditor {
         CompletableFuture<LfeCloseFileEvent> closing = operationHandler.treatCloseFileJsRequest(sendCloseFileJsRequest());
 
         closing.thenAccept(observer::notifyCloseFileEvent);
+        closing.thenAccept(this::updateState);
 
         return closing.thenApply(LfeCloseFileEvent::fileInfo);
     }
@@ -144,11 +146,8 @@ public class LiveFileEditor {
                 sendSaveFileJsRequest(content), content
         );
 
-        saving.thenAccept(observer::notifySaveFileEvent)
-                .exceptionally(throwable -> {
-                    throwable.printStackTrace();
-                    return null;
-                });
+        saving.thenAccept(observer::notifySaveFileEvent);
+        saving.thenAccept(this::updateState);
 
         return saving.thenApply(event ->
                 event.failed()
@@ -157,19 +156,40 @@ public class LiveFileEditor {
         );
     }
 
+    void updateState() {
+        updateState(null);
+    }
+
+    private void updateState(LfeOperationEvent event) {
+        if(event != null && event.failed())
+            return;
+
+        LfeState oldState = state;
+
+        state = state.withEditorIsWorking(isWorking())
+                .withAutosaveIsWorking(autosave().isWorking());
+
+        if(event instanceof LfeOpenFileEvent opening && opening.fileInfo().isPresent())
+            state = state.withOpenedFile(opening.fileInfo().get());
+        else if(event instanceof LfeCloseFileEvent)
+            state = state.withOpenedFile(null);
+        else if(event instanceof LfeSaveFileEvent saving) {
+            state = state.withLastSaveTime(LocalDateTime.now())
+                    .withLastSaveData(saving.data());
+        }
+
+        if(!oldState.equals(state))
+            observer.notifyStateChangeEvent(new LfeStateChangeEvent(state, oldState));
+    }
+
     private CompletableFuture<JsonValue> sendSaveFileJsRequest(final String content) {
         return attachment.getElement()
                 .executeJs("return saveFile($0)", content)
                 .toCompletableFuture();
     }
 
-    // TODO: Observer won't be the place to get the state
-    public LfeState getState() {
-        return new LfeState(
-                isWorking(),
-                false,
-                autosave().isWorking()
-        );
+    public LfeState state() {
+        return state;
     }
 
     public LfeAutosave autosave() {

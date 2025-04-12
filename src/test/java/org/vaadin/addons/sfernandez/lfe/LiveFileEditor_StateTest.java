@@ -127,7 +127,7 @@ class LiveFileEditor_StateTest {
 //
 //        LfeState state = editor.getState();
 //
-//        assertThat(state.autosaveIsRunning()).isTrue();
+//        assertThat(state.autosaveIsWorking()).isTrue();
 //    }
 //
 //    @Test
@@ -136,7 +136,7 @@ class LiveFileEditor_StateTest {
 //
 //        LfeState state = editor.getState();
 //
-//        assertThat(state.autosaveIsRunning()).isFalse();
+//        assertThat(state.autosaveIsWorking()).isFalse();
 //    }
 
     @Test
