@@ -92,6 +92,15 @@ class LfeAutosaveTest {
     }
 
     @Test
+    void setEnableToFalse_stopsAutosaveIfWorkingTest() {
+        autosave.start();
+
+        autosave.setEnabled(false);
+
+        assertThat(autosave.isWorking()).isFalse();
+    }
+
+    @Test
     void autosave_isNotRunning_byDefaultTest() {
         LfeAutosave autosave = new LfeAutosave(mockedEditor);
 

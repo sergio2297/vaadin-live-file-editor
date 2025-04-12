@@ -45,10 +45,14 @@ public final class LfeAutosave {
     /**
      * <p>Enables the autosave process. Autosave must be enabled to work after calling {@link #start()}</p>
      * <p>Default: false</p>
+     * <p>If autosave is running currently and it is disabled, then it will stop working</p>
      * @param enable true to enable autosave
      */
     public void setEnabled(boolean enable) {
         this.isEnabled = enable;
+
+        if(!isEnabled && isWorking())
+            stop();
     }
 
     /**
