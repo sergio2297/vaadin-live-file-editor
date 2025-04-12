@@ -1,5 +1,19 @@
 window.fileHandle = null; // Stores the handler for the opened file
-window.autoSaveInterval = null;
+
+window.createFile = async function(fileTypes) {
+    try {
+        const handle = await window.showSaveFilePicker(fileTypes);
+
+        fileHandle = handle;
+
+        return getFileInfoAsJson(fileHandle);
+    } catch (err) {
+        return {
+            error: err.name,
+            message: err.message
+        };
+    }
+}
 
 window.openFile = async function(fileTypes) {
     try {
@@ -8,14 +22,7 @@ window.openFile = async function(fileTypes) {
         fileHandle = handle;
 
         if(await verifyPermission(fileHandle, true)) {
-            const file = await fileHandle.getFile();
-
-            const json = {};
-            json.name = file.name;
-            json.size = file.size;
-            json.type = file.type;
-            json.content = await file.text();
-            return json;
+            return getFileInfoAsJson(fileHandle);
         } else {
             return {
                 'error': 'PermissionNotGrantedError',
@@ -50,6 +57,16 @@ async function verifyPermission(fileHandle, withWrite) {
     return false;
 }
 
+async function getFileInfoAsJson(fileHandle) {
+    const file = await fileHandle.getFile();
+
+    const json = {};
+    json.name = file.name;
+    json.size = file.size;
+    json.type = file.type;
+    json.content = await file.text();
+    return json;
+}
 
 window.saveFile = async function(content) {
     if(!fileHandle) {

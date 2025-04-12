@@ -17,6 +17,7 @@ public class LfeObserver {
     private final List<LfeWorkingStateChangeListener> workingStateChangeListeners = new ArrayList<>();
     private final List<LfeAutosaveWorkingStateChangeListener> autosaveWorkingStateChangeListeners = new ArrayList<>();
 
+    private final List<LfeCreateFileListener> createFileListeners = new ArrayList<>();
     private final List<LfeOpenFileListener> openFileListeners = new ArrayList<>();
     private final List<LfeCloseFileListener> closeFileListeners = new ArrayList<>();
     private final List<LfeSaveFileListener> saveFileListeners = new ArrayList<>();
@@ -63,6 +64,19 @@ public class LfeObserver {
 
     void notifyAutosaveWorkingStateChangeEvent(final LfeAutosaveWorkingStateChangeEvent event) {
         autosaveWorkingStateChangeListeners.forEach(listener -> listener.onAutosaveRunningStateChange(event));
+    }
+
+    /**
+     * <p>Add a new listener that will be notified every time a file is created.</p>
+     * @param listener Listener to add
+     * @return the registration of the listener
+     */
+    public Registration addCreateFileListener(final LfeCreateFileListener listener) {
+        return Registration.addAndRemove(createFileListeners, listener);
+    }
+
+    void notifyCreateFileEvent(LfeCreateFileEvent event) {
+        createFileListeners.forEach(listener -> listener.onCreateFile(event));
     }
 
     /**

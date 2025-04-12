@@ -53,6 +53,7 @@ class LfeErrorHandlerTest {
 
     public static Stream<Arguments> extractErrorOfOperations() {
         return Stream.of(
+                Arguments.of((ExtractErrorOperation) LfeErrorHandler::creatingFileErrorOf, LfeError.Type.Creating.class),
                 Arguments.of((ExtractErrorOperation) LfeErrorHandler::openingFileErrorOf, LfeError.Type.Opening.class),
                 Arguments.of((ExtractErrorOperation) LfeErrorHandler::closingFileErrorOf, LfeError.Type.Closing.class),
                 Arguments.of((ExtractErrorOperation) LfeErrorHandler::savingFileErrorOf, LfeError.Type.Saving.class)

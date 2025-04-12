@@ -4,6 +4,7 @@ import es.sfernandez.library4j.types.DataSize;
 import org.mockito.Mockito;
 import org.vaadin.addons.sfernandez.lfe.error.LfeError;
 import org.vaadin.addons.sfernandez.lfe.events.LfeCloseFileEvent;
+import org.vaadin.addons.sfernandez.lfe.events.LfeCreateFileEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeOpenFileEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
@@ -36,6 +37,24 @@ class OperationHandlerMock {
 
     public LfeOperationHandler get() {
         return mock;
+    }
+
+    public LfeCreateFileEvent mockCreateFileToSuccess() {
+        LfeCreateFileEvent successfulEvent = new LfeCreateFileEvent(dummyFileInfo());
+
+        Mockito.when(mock.treatCreateFileJsRequest(any()))
+                .thenReturn(CompletableFuture.completedFuture(successfulEvent));
+
+        return successfulEvent;
+    }
+
+    public LfeCreateFileEvent mockCreateFileToFail() {
+        LfeCreateFileEvent unsuccessfulEvent = new LfeCreateFileEvent(dummyError());
+
+        Mockito.when(mock.treatCreateFileJsRequest(any()))
+                .thenReturn(CompletableFuture.completedFuture(unsuccessfulEvent));
+
+        return unsuccessfulEvent;
     }
 
     public LfeOpenFileEvent mockOpenFileToSuccess() {

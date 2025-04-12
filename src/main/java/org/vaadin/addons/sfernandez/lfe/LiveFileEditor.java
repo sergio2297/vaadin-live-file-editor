@@ -92,6 +92,27 @@ public class LiveFileEditor {
             throw new LiveFileEditorException("Error. It's necessary to attach the attachment before using the LiveFileEditor.");
     }
 
+    public CompletableFuture<Optional<FileInfo>> createFile() {
+        assertIsWorking();
+
+        CompletableFuture<LfeCreateFileEvent> creating = operationHandler.treatCreateFileJsRequest(sendCreateFileJsRequest());
+
+        creating.thenAccept(observer::notifyCreateFileEvent);
+        creating.thenAccept(this::updateState);
+        creating.thenAccept(event -> {
+            if(!event.failed() && autosave().isEnabled())
+                autosave().start();
+        });
+
+        return creating.thenApply(LfeCreateFileEvent::fileInfo);
+    }
+
+    private CompletableFuture<JsonValue> sendCreateFileJsRequest() {
+        return attachment.getElement()
+                .executeJs("return await createFile($0);", allowedFileTypesAsJson())
+                .toCompletableFuture();
+    }
+
     public CompletableFuture<Optional<FileInfo>> openFile() {
         assertIsWorking();
 
@@ -137,8 +158,6 @@ public class LiveFileEditor {
         return jsonParser.asJson(setup.getAllowedFileTypes());
     }
 
-    // TODO: What if I try to save content and there isn't a file loaded => Save it as new could be a possibility
-    // TODO: What if the file I opened before it's remove and now it's impossible to save it's content
     public CompletableFuture<Optional<String>> saveFile(final String content) {
         assertIsWorking();
 

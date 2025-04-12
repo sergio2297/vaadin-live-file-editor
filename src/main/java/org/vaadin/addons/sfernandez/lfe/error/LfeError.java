@@ -44,6 +44,24 @@ public record LfeError(Type type, String message) {
         }
 
         /**
+         * <p>Specific type error for Creating operation</p>
+         */
+        enum Creating implements Type {
+            /** The user has closed intentionally the file selector aborting the operation of creating a file */
+            ABORT("AbortError");
+
+            private final String code;
+
+            Creating(final String code) {
+                this.code = code;
+            }
+
+            public String code() {
+                return code;
+            }
+        }
+
+        /**
          * <p>Specific type error for Opening operation</p>
          */
         enum Opening implements Type {

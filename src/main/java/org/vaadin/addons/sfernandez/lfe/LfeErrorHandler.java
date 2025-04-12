@@ -28,6 +28,22 @@ class LfeErrorHandler {
     }
 
     /**
+     * <p>Extract an {@link LfeError} of type {@link LfeError.Type.Creating} from the given json.</p>
+     * @param json Json which contains an {@link LfeError.Type.Creating} error
+     * @return a {@link LfeError} of type {@link LfeError.Type.Creating} or {@link LfeError.Type.Other#UNKNOWN} if the
+     * error code isn't recognized
+     * @throws LiveFileEditorException if no error is in the Json {@link #thereIsAnError(JsonValue)}
+     */
+    public LfeError creatingFileErrorOf(JsonValue json) {
+        assertThereIsAnErrorIn(json);
+
+        return new LfeError(
+                getErrorPropertyOf(json, LfeError.Type.Creating.class),
+                getMessagePropertyOf(json)
+        );
+    }
+
+    /**
      * <p>Extract an {@link LfeError} of type {@link LfeError.Type.Opening} from the given json.</p>
      * @param json Json which contains an {@link LfeError.Type.Opening} error
      * @return a {@link LfeError} of type {@link LfeError.Type.Opening} or {@link LfeError.Type.Other#UNKNOWN} if the

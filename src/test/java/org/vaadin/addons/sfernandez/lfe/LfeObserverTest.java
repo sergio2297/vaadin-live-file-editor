@@ -104,6 +104,33 @@ class LfeObserverTest {
     }
 
     @Test
+    void addedCreateListeners_areNotified_withCreateEventsTest() {
+        LfeCreateFileEvent event = Mockito.mock(LfeCreateFileEvent.class);
+        AtomicBoolean notified = new AtomicBoolean(false);
+
+        observer.addCreateFileListener(
+                e -> notified.set(e == event)
+        );
+        observer.notifyCreateFileEvent(event);
+
+        assertThat(notified.get()).isTrue();
+    }
+
+    @Test
+    void removedCreateListeners_areNotNotifiedAnyMore_withCreateEventsTest() {
+        LfeCreateFileEvent event = Mockito.mock(LfeCreateFileEvent.class);
+        AtomicBoolean notified = new AtomicBoolean(false);
+
+        Registration registration = observer.addCreateFileListener(
+                e -> notified.set(e == event)
+        );
+        registration.remove();
+        observer.notifyCreateFileEvent(event);
+
+        assertThat(notified.get()).isFalse();
+    }
+
+    @Test
     void addedOpenListeners_areNotified_withOpenEventsTest() {
         LfeOpenFileEvent event = Mockito.mock(LfeOpenFileEvent.class);
         AtomicBoolean notified = new AtomicBoolean(false);

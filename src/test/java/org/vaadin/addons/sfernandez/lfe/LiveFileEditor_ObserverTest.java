@@ -3,6 +3,7 @@ package org.vaadin.addons.sfernandez.lfe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.vaadin.addons.sfernandez.lfe.events.LfeCloseFileEvent;
+import org.vaadin.addons.sfernandez.lfe.events.LfeCreateFileEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeOpenFileEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
 import org.vaadin.addons.sfernandez.lfe.setup.LfeAutosaveSetup;
@@ -74,6 +75,30 @@ class LiveFileEditor_ObserverTest {
         ui.attach();
 
         assertThat(isWorking.get()).isTrue();
+    }
+
+    @Test
+    void observerNotifies_whenEditorCreatesAFileSuccessfullyTest() throws ExecutionException, InterruptedException, TimeoutException {
+        LfeCreateFileEvent eventThatWillBeFired = operationHandler.mockCreateFileToSuccess();
+
+        AtomicBoolean isNotified = new AtomicBoolean(false);
+        observer.addCreateFileListener(event -> isNotified.set(event == eventThatWillBeFired));
+
+        editor.createFile().get(50, TimeUnit.MILLISECONDS);
+
+        assertThat(isNotified).isTrue();
+    }
+
+    @Test
+    void observerNotifies_whenEditorCreatesAFileUnsuccessfullyTest() throws ExecutionException, InterruptedException, TimeoutException {
+        LfeCreateFileEvent eventThatWillBeFired = operationHandler.mockCreateFileToFail();
+
+        AtomicBoolean isNotified = new AtomicBoolean(false);
+        observer.addCreateFileListener(event -> isNotified.set(event == eventThatWillBeFired));
+
+        editor.createFile().get(50, TimeUnit.MILLISECONDS);
+
+        assertThat(isNotified).isTrue();
     }
 
     @Test

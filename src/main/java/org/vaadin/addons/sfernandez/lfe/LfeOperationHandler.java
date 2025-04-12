@@ -3,6 +3,7 @@ package org.vaadin.addons.sfernandez.lfe;
 import elemental.json.JsonValue;
 import org.vaadin.addons.sfernandez.lfe.error.LfeError;
 import org.vaadin.addons.sfernandez.lfe.events.LfeCloseFileEvent;
+import org.vaadin.addons.sfernandez.lfe.events.LfeCreateFileEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeOpenFileEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
@@ -20,6 +21,20 @@ public class LfeOperationHandler {
     LfeOperationHandler() {}
 
     //---- Methods ----
+    public CompletableFuture<LfeCreateFileEvent> treatCreateFileJsRequest(final CompletableFuture<JsonValue> jsonResponse) {
+        return jsonResponse.thenApply(json -> {
+            if(errorHandler.thereIsAnError(json)) {
+                LfeError error = errorHandler.creatingFileErrorOf(json);
+
+                return new LfeCreateFileEvent(error);
+            } else {
+                FileInfo fileInfo = toFileInfo(json);
+
+                return new LfeCreateFileEvent(fileInfo);
+            }
+        });
+    }
+
     public CompletableFuture<LfeOpenFileEvent> treatOpenFileJsRequest(final CompletableFuture<JsonValue> jsonResponse) {
         return jsonResponse.thenApply(json -> {
             if(errorHandler.thereIsAnError(json)) {
