@@ -98,7 +98,7 @@ public class LiveFileEditor {
 
     public CompletableFuture<Optional<FileInfo>> createFile(final String suggestedName) {
         OptionsCreateFile options = new OptionsCreateFile();
-        options.setExcludeAcceptAllOption(true);
+        options.setExcludeAcceptAllOption(!setup.isAllFileTypesAllowed());
         options.setAllowedFileTypes(setup.getAllowedFileTypes());
         options.setSuggestedName(suggestedName);
 
@@ -129,7 +129,7 @@ public class LiveFileEditor {
 
     public CompletableFuture<Optional<FileInfo>> openFile() {
         OptionsOpenFile options = new OptionsOpenFile();
-        options.setExcludeAcceptAllOption(true);
+        options.setExcludeAcceptAllOption(!setup.isAllFileTypesAllowed());
         options.setAllowedFileTypes(setup.getAllowedFileTypes());
 
         return openFile(options);

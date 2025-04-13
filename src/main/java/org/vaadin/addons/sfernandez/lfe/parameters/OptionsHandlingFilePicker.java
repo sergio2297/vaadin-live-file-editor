@@ -26,6 +26,7 @@ public sealed abstract class OptionsHandlingFilePicker
     //---- Attributes ----
     private boolean excludeAcceptAllOption = false;
     private WellKnownDirectories startIn = null;
+    private String id;
     private FileType[] allowedFileTypes = new FileType[0];
 
     //---- Methods ----
@@ -43,6 +44,14 @@ public sealed abstract class OptionsHandlingFilePicker
 
     public void setStartIn(WellKnownDirectories startIn) {
         this.startIn = startIn;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public FileType[] getAllowedFileTypes() {

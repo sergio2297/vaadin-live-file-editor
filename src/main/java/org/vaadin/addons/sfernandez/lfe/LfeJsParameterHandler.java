@@ -41,6 +41,9 @@ class LfeJsParameterHandler {
         if(options.getStartIn() != null)
             json.put("startIn", options.getStartIn().getRepresentation());
 
+        if(options.getId() != null)
+            json.put("id", options.getId());
+
         if(options.getAllowedFileTypes() != null && options.getAllowedFileTypes().length > 0)
             json.put("types", jsonParser.asJson(options.getAllowedFileTypes()));
     }

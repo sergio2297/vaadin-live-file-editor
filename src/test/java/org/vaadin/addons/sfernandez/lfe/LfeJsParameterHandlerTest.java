@@ -116,6 +116,28 @@ class LfeJsParameterHandlerTest {
 
     @ParameterizedTest
     @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withoutId_doesNotIncludesItJsonPropertyTest(final OptionsHandlingFilePicker options) {
+        options.setId(null);
+
+        assertThatJsonDoesNotContain(
+                mapToJsonUsingHandler(options),
+                "\"id\":"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withId_includesJsonPropertyTest(final OptionsHandlingFilePicker options) {
+        options.setId(" ");
+
+        assertThatJsonContains(
+                mapToJsonUsingHandler(options),
+                "\"id\": \" \""
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
     void mapToJson_optionsFilePicker_withoutStartInDirectory_doesNotIncludeItTest(final OptionsHandlingFilePicker options) {
         options.setStartIn(null);
 
