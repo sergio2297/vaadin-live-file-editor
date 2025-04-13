@@ -4,10 +4,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
 import elemental.json.JsonValue;
-import org.vaadin.addons.sfernandez.lfe.events.*;
 import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.events.*;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
-import org.vaadin.addons.sfernandez.lfe.parameters.JsonParameterParser;
 import org.vaadin.addons.sfernandez.lfe.setup.LiveFileEditorSetup;
 
 import java.time.LocalDateTime;
@@ -20,12 +19,11 @@ public class LiveFileEditor {
     //---- Attributes ----
     private final Component attachment;
 
-    private final JsonParameterParser jsonParser = new JsonParameterParser();
-
     private boolean isWorking = false;
     private LiveFileEditorSetup setup = new LiveFileEditorSetup();
 
     private final LfeOperationHandler operationHandler;
+    private final LfeJsParameterHandler jsParameterHandler = new LfeJsParameterHandler();
     private final LfeObserver observer = new LfeObserver();
     private final LfeAutosave autosave = new LfeAutosave(this);
     private LfeState state = new LfeState();
@@ -93,9 +91,13 @@ public class LiveFileEditor {
     }
 
     public CompletableFuture<Optional<FileInfo>> createFile() {
+        return createFile(null);
+    }
+
+    public CompletableFuture<Optional<FileInfo>> createFile(final String suggestedName) {
         assertIsWorking();
 
-        CompletableFuture<LfeCreateFileEvent> creating = operationHandler.treatCreateFileJsRequest(sendCreateFileJsRequest());
+        CompletableFuture<LfeCreateFileEvent> creating = operationHandler.treatCreateFileJsRequest(sendCreateFileJsRequest(suggestedName));
 
         creating.thenAccept(observer::notifyCreateFileEvent);
         creating.thenAccept(this::updateState);
@@ -107,9 +109,9 @@ public class LiveFileEditor {
         return creating.thenApply(LfeCreateFileEvent::fileInfo);
     }
 
-    private CompletableFuture<JsonValue> sendCreateFileJsRequest() {
+    private CompletableFuture<JsonValue> sendCreateFileJsRequest(final String suggestedName) {
         return attachment.getElement()
-                .executeJs("return await createFile($0);", allowedFileTypesAsJson())
+                .executeJs("return await createFile($0);", jsParameterHandler.transformToCreateFileRequest(suggestedName, setup))
                 .toCompletableFuture();
     }
 
@@ -130,7 +132,7 @@ public class LiveFileEditor {
 
     private CompletableFuture<JsonValue> sendOpenFileJsRequest() {
         return attachment.getElement()
-                .executeJs("return await openFile($0);", allowedFileTypesAsJson())
+                .executeJs("return await openFile($0);", jsParameterHandler.transformToOpenFileRequest(setup))
                 .toCompletableFuture();
     }
 
@@ -152,10 +154,6 @@ public class LiveFileEditor {
         return attachment.getElement()
                 .executeJs("return await closeFile();")
                 .toCompletableFuture();
-    }
-
-    private JsonValue allowedFileTypesAsJson() {
-        return jsonParser.asJson(setup.getAllowedFileTypes());
     }
 
     public CompletableFuture<Optional<String>> saveFile(final String content) {
