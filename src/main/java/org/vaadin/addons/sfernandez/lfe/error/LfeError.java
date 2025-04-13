@@ -48,7 +48,18 @@ public record LfeError(Type type, String message) {
          */
         enum Creating implements Type {
             /** The user has closed intentionally the file selector aborting the operation of creating a file */
-            ABORT("AbortError");
+            ABORT("AbortError"),
+            /** The system can't find the created file during the creation */
+            NOT_FOUND("NotFoundError"),
+            /** The call was blocked for security reasons */
+            SECURITY("SecurityError"),
+            /** The accepted types can't be processed:
+             * <ul>
+             *     <li>It's impossible to parse an accept option to a valid MIME type.</li>
+             *     <li>Any accept type is invalid due to its length or how it is formatted.</li>
+             *     <li>Types are empty and the excludeAcceptAllOption is true.</li>
+             * </ul> */
+            FILE_TYPES("TypeError");
 
             private final String code;
 
@@ -63,6 +74,7 @@ public record LfeError(Type type, String message) {
 
         /**
          * <p>Specific type error for Opening operation</p>
+         * <p><a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/showOpenFilePicker#exceptions">Reference</a></p>
          */
         enum Opening implements Type {
             /** The user has closed intentionally the file selector aborting the operation of opening a file */
@@ -70,7 +82,16 @@ public record LfeError(Type type, String message) {
             /** The system can't find the selected file during the operation of opening */
             NOT_FOUND("NotFoundError"),
             /** The user didn't grant the necessary permissions */
-            PERMISSION_NOT_GRANTED("PermissionNotGrantedError");
+            PERMISSION_NOT_GRANTED("PermissionNotGrantedError"),
+            /** The call was blocked for security reasons */
+            SECURITY("SecurityError"),
+            /** The accepted types can't be processed:
+             * <ul>
+             *     <li>It's impossible to parse an accept option to a valid MIME type.</li>
+             *     <li>Any accept type is invalid due to its length or how it is formatted.</li>
+             *     <li>Types are empty and the excludeAcceptAllOption is true.</li>
+             * </ul> */
+            FILE_TYPES("TypeError");
 
             private final String code;
 
@@ -105,8 +126,16 @@ public record LfeError(Type type, String message) {
          * <p>Specific type error for Saving operation</p>
          */
         enum Saving implements Type {
+            /** Thrown if safe-browsing checks fails */
+            ABORT("AbortError"),
             /** There is no file to save opened yet */
-            MISSING_FILE("MissingFileError");
+            MISSING_FILE("MissingFileError"),
+            /** The browser is not able to acquire a lock on the file */
+            NO_MODIFICATION_ALLOWED("NoModificationAllowedError"),
+            /** The permission to readwrite is not granted */
+            NOT_ALLOWED("NotAllowedError"),
+            /** The current file is not found */
+            NOT_FOUND("NotFoundError");
 
             private final String code;
 
