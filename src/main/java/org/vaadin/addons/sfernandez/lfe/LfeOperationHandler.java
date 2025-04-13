@@ -7,14 +7,13 @@ import org.vaadin.addons.sfernandez.lfe.events.LfeCreateFileEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeOpenFileEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
-import org.vaadin.addons.sfernandez.lfe.parameters.JsonParameterParser;
 
 import java.util.concurrent.CompletableFuture;
 
 public class LfeOperationHandler {
 
     //---- Attributes ----
-    private final JsonParameterParser jsonParser = new JsonParameterParser();
+    private final LfeJsParameterHandler parameterHandler = new LfeJsParameterHandler();
     private final LfeErrorHandler errorHandler = new LfeErrorHandler();
 
     //---- Constructor ----
@@ -76,6 +75,6 @@ public class LfeOperationHandler {
     }
 
     private FileInfo toFileInfo(JsonValue json) {
-        return jsonParser.toFileInfo(json);
+        return parameterHandler.mapToFileInfo(json);
     }
 }

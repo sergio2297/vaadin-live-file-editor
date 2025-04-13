@@ -111,7 +111,8 @@ public class LiveFileEditor {
 
     private CompletableFuture<JsonValue> sendCreateFileJsRequest(final String suggestedName) {
         return attachment.getElement()
-                .executeJs("return await createFile($0);", jsParameterHandler.transformToCreateFileRequest(suggestedName, setup))
+                .executeJs("return await createFile($0);",
+                        jsParameterHandler.mapToCreateFileRequest(suggestedName, setup.getAllowedFileTypes()))
                 .toCompletableFuture();
     }
 
@@ -132,7 +133,8 @@ public class LiveFileEditor {
 
     private CompletableFuture<JsonValue> sendOpenFileJsRequest() {
         return attachment.getElement()
-                .executeJs("return await openFile($0);", jsParameterHandler.transformToOpenFileRequest(setup))
+                .executeJs("return await openFile($0);",
+                        jsParameterHandler.mapToOpenFileRequest(setup.getAllowedFileTypes()))
                 .toCompletableFuture();
     }
 
