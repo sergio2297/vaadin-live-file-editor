@@ -5,28 +5,28 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class LiveFileEditorSetupTest {
+class LfeSetupTest {
 
     //---- Attributes ----
-    private LiveFileEditorSetup setup;
+    private LfeSetup setup;
 
     //---- Configuration ----
     @BeforeEach
     void setup() {
-        this.setup = new LiveFileEditorSetup();
+        this.setup = new LfeSetup();
     }
 
     //---- Tests ----
     @Test
     void allFileTypes_areAllowed_byDefaultTest() {
-        LiveFileEditorSetup setup = new LiveFileEditorSetup();
+        LfeSetup setup = new LfeSetup();
 
         assertThat(setup.isAllFileTypesAllowed()).isTrue();
     }
 
     @Test
     void allowedFileTypes_areEmpty_byDefaultTest() {
-        LiveFileEditorSetup setup = new LiveFileEditorSetup();
+        LfeSetup setup = new LfeSetup();
 
         assertThat(setup.getAllowedFileTypes()).isEmpty();
     }

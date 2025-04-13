@@ -7,7 +7,7 @@ import elemental.json.JsonValue;
 import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 import org.vaadin.addons.sfernandez.lfe.events.*;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
-import org.vaadin.addons.sfernandez.lfe.setup.LiveFileEditorSetup;
+import org.vaadin.addons.sfernandez.lfe.setup.LfeSetup;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -20,7 +20,7 @@ public class LiveFileEditor {
     private final Component attachment;
 
     private boolean isWorking = false;
-    private LiveFileEditorSetup setup = new LiveFileEditorSetup();
+    private LfeSetup setup = new LfeSetup();
 
     private final LfeOperationHandler operationHandler;
     private final LfeJsParameterHandler jsParameterHandler = new LfeJsParameterHandler();
@@ -81,7 +81,7 @@ public class LiveFileEditor {
         return !isWorking();
     }
 
-    public void setup(final LiveFileEditorSetup setup) {
+    public void setup(final LfeSetup setup) {
         this.setup = setup;
     }
 

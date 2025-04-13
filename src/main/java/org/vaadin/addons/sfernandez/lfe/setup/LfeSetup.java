@@ -1,6 +1,6 @@
 package org.vaadin.addons.sfernandez.lfe.setup;
 
-public class LiveFileEditorSetup {
+public class LfeSetup {
 
     //---- Attributes ----
     private FileType[] allowedFileTypes = new FileType[0];
