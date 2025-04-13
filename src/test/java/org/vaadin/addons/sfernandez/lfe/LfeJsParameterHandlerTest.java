@@ -5,15 +5,17 @@ import elemental.json.JsonValue;
 import es.sfernandez.library4j.types.DataSize;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.opentest4j.TestAbortedException;
 import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
-import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
-import org.vaadin.addons.sfernandez.lfe.setup.FileType;
+import org.vaadin.addons.sfernandez.lfe.parameters.*;
 
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,8 +26,12 @@ class LfeJsParameterHandlerTest {
     private final LfeJsParameterHandler handler = new LfeJsParameterHandler();
 
     //---- Fixtures ----
-    private final String aString = "String";
-    private final FileType aFileType = new FileType("Images", "image/*", ".png", ".jpg", ".gif");
+    private static Stream<Arguments> optionsFilePicker() {
+        return Stream.of(
+                Arguments.of(new OptionsOpenFile()),
+                Arguments.of(new OptionsCreateFile())
+        );
+    }
 
     //---- Methods ----
     private String minify(String json) {
@@ -59,9 +65,7 @@ class LfeJsParameterHandlerTest {
         return resultado.toString();
     }
 
-    private void assertThatJsonContains(Supplier<JsonValue> jsonGeneration, String jsonToContain) {
-        JsonValue output = jsonGeneration.get();
-
+    private void assertThatJsonContains(JsonValue output, String jsonToContain) {
         assertThat(
                 minify(output.toJson())
         ).contains(
@@ -69,9 +73,7 @@ class LfeJsParameterHandlerTest {
         );
     }
 
-    private void assertThatJsonDoesNotContain(Supplier<JsonValue> jsonGeneration, String jsonToNotContain) {
-        JsonValue output = jsonGeneration.get();
-
+    private void assertThatJsonDoesNotContain(JsonValue output, String jsonToNotContain) {
         assertThat(
                 minify(output.toJson())
         ).doesNotContain(
@@ -79,52 +81,102 @@ class LfeJsParameterHandlerTest {
         );
     }
 
+    private JsonValue mapToJsonUsingHandler(final OptionsHandlingFilePicker options) {
+        if(options instanceof OptionsCreateFile createFileOptions) {
+            return handler.mapToJson(createFileOptions);
+        } else if(options instanceof OptionsOpenFile openFileOptions) {
+            return handler.mapToJson(openFileOptions);
+        } else {
+            throw new TestAbortedException("The give options instance is not handled properly");
+        }
+    }
+
     //---- Tests ----
     @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {"  "})
-    void mapTo_createFileRequest_withNullOrEmptySuggestedName_doesNotIncludeItTest(String notValidSuggestedName) {
-        assertThatJsonDoesNotContain(
-                () -> handler.mapToCreateFileRequest(notValidSuggestedName, aFileType),
-                "\"suggestedName\":"
-        );
-    }
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withExcludeAllOption_includeJsonPropertyTest(final OptionsHandlingFilePicker options) {
+        options.setExcludeAcceptAllOption(true);
 
-    @Test
-    void mapTo_createFileRequest_withSuggestedName_includesItTest() {
         assertThatJsonContains(
-                () -> handler.mapToCreateFileRequest("FileName.txt", aFileType),
-                "\"suggestedName\": \"FileName.txt\""
+                mapToJsonUsingHandler(options),
+                "\"excludeAcceptAllOption\": true"
         );
     }
 
-    @Test
-    void mapTo_createFileRequest_withNullFileTypes_returnEmptyArrayTest() {
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withoutExcludeAllOption_includeJsonPropertyTest(final OptionsHandlingFilePicker options) {
+        options.setExcludeAcceptAllOption(false);
+
+        assertThatJsonContains(
+                mapToJsonUsingHandler(options),
+                "\"excludeAcceptAllOption\": false"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withoutStartInDirectory_doesNotIncludeItTest(final OptionsHandlingFilePicker options) {
+        options.setStartIn(null);
+
         assertThatJsonDoesNotContain(
-                () -> handler.mapToCreateFileRequest(aString, (FileType[]) null),
+                mapToJsonUsingHandler(options),
+                "\"startIn\":"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withStartInDirectory_includesItTest(final OptionsHandlingFilePicker options) {
+        options.setStartIn(OptionsHandlingFilePicker.WellKnownDirectories.DOCUMENTS);
+
+        assertThatJsonContains(
+                mapToJsonUsingHandler(options),
+                "\"startIn\": \"documents\""
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withNullFileTypes_returnEmptyArrayTest(final OptionsHandlingFilePicker options) {
+        options.setAllowedFileTypes(null);
+
+        assertThatJsonDoesNotContain(
+                mapToJsonUsingHandler(options),
                 "\"types\":"
         );
     }
 
-    @Test
-    void mapTo_createFileRequest_withEmptyFileTypes_returnEmptyArrayTest() {
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withEmptyFileTypes_returnEmptyArrayTest(final OptionsHandlingFilePicker options) {
+        options.setAllowedFileTypes(new FileType[0]);
+
         assertThatJsonDoesNotContain(
-                () -> handler.mapToCreateFileRequest(aString),
+                mapToJsonUsingHandler(options),
                 "\"types\":"
         );
     }
 
-    @Test
-    void mapTo_createFileRequest_withNullFileType_returnEmptyArrayTest() {
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withNullFileType_returnEmptyArrayTest(final OptionsHandlingFilePicker options) {
+        options.setAllowedFileTypes(new FileType[] { null });
+
         assertThatJsonContains(
-                () -> handler.mapToCreateFileRequest(aString, (FileType) null),
+                mapToJsonUsingHandler(options),
                 "\"types\": []"
         );
     }
 
-    @Test
-    void mapTo_createFileRequest_withOneFileType_returnOneFileTypeArrayTest() {
-        FileType fileType = new FileType("Images", "image/*", ".png", ".jpg", ".gif");
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withOneFileType_returnOneFileTypeArrayTest(final OptionsHandlingFilePicker options) {
+        FileType[] fileTypes = {
+                new FileType("Images", "image/*", ".png", ".jpg", ".gif")
+        };
+        options.setAllowedFileTypes(fileTypes);
+
         String jsonToContain = """
                         "types": [
                             {
@@ -137,16 +189,18 @@ class LfeJsParameterHandlerTest {
                         """;
 
         assertThatJsonContains(
-                () -> handler.mapToCreateFileRequest(aString, fileType),
+                mapToJsonUsingHandler(options),
                 jsonToContain
         );
     }
 
-
-    @Test
-    void mapTo_createFileRequest_withFileType_withoutDescription_doesNotIncludeDescriptionPropertyTest() {
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withFileType_withNullDescription_doesNotIncludeDescriptionPropertyTest(final OptionsHandlingFilePicker options) {
         FileType fileTypeWithNullDescription = new FileType(null, "text/plain", ".txt");
-        FileType fileTypeWithEmptyDescription = new FileType("   ", "text/plain", ".txt");
+        options.setAllowedFileTypes(
+                new FileType[] { fileTypeWithNullDescription }
+        );
 
         String jsonToContain = """
                 "types": [
@@ -159,29 +213,59 @@ class LfeJsParameterHandlerTest {
                 """;
 
         assertThatJsonContains(
-                () -> handler.mapToCreateFileRequest(aString, fileTypeWithNullDescription),
+                mapToJsonUsingHandler(options),
                 jsonToContain
         );
+    }
+
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withFileType_withEmptyDescription_doesNotIncludeDescriptionPropertyTest(final OptionsHandlingFilePicker options) {
+        FileType fileTypeWithEmptyDescription = new FileType("   ", "text/plain", ".txt");
+        options.setAllowedFileTypes(
+                new FileType[] { fileTypeWithEmptyDescription }
+        );
+
+        String jsonToContain = """
+                "types": [
+                    {
+                        "accept": {
+                            "text/plain": [".txt"]
+                        }
+                    }
+                ]
+                """;
+
         assertThatJsonContains(
-                () -> handler.mapToCreateFileRequest(aString, fileTypeWithEmptyDescription),
+                mapToJsonUsingHandler(options),
                 jsonToContain
         );
     }
 
-
-    @Test
-    void mapTo_createFileRequest_withFileType_withoutMimeType_throwsExceptionTest() {
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withFileType_withoutMimeType_throwsExceptionTest(final OptionsHandlingFilePicker options) {
         FileType fileTypeWithNullMimeType = new FileType("Text", null, ".txt");
-        FileType fileTypeWithEmptyMimeType = new FileType("Text", "   ", ".txt");
+        options.setAllowedFileTypes(
+                new FileType[] { fileTypeWithNullMimeType }
+        );
+        assertThrows(LiveFileEditorException.class, () -> mapToJsonUsingHandler(options));
 
-        assertThrows(LiveFileEditorException.class, () -> handler.mapToCreateFileRequest(aString, fileTypeWithNullMimeType));
-        assertThrows(LiveFileEditorException.class, () -> handler.mapToCreateFileRequest(aString, fileTypeWithEmptyMimeType));
+        FileType fileTypeWithEmptyMimeType = new FileType("Text", "   ", ".txt");
+        options.setAllowedFileTypes(
+                new FileType[] { fileTypeWithEmptyMimeType }
+        );
+        assertThrows(LiveFileEditorException.class, () -> mapToJsonUsingHandler(options));
     }
 
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withFileType_withoutFileExtensions_returnsEmptyAcceptedArrayTest(final OptionsHandlingFilePicker options) {
+        FileType[] fileTypes = {
+                new FileType("Text", "text/plain")
+        };
+        options.setAllowedFileTypes(fileTypes);
 
-    @Test
-    void mapTo_createFileRequest_withfileType_withoutFileExtensions_returnsEmptyAcceptedArrayTest() {
-        FileType fileType = new FileType("Text", "text/plain");
         String jsonToContain = """
                         "types": [
                             {
@@ -194,19 +278,21 @@ class LfeJsParameterHandlerTest {
                         """;
 
         assertThatJsonContains(
-                () -> handler.mapToCreateFileRequest(aString, fileType),
+                mapToJsonUsingHandler(options),
                 jsonToContain
         );
     }
 
-    @Test
-    void mapTo_createFileRequest_withThreeFileTypes_returnThreeFileTypesArrayTest() {
+    @ParameterizedTest
+    @MethodSource("optionsFilePicker")
+    void mapToJson_optionsFilePicker_withThreeFileTypes_returnThreeFileTypesArrayTest(final OptionsHandlingFilePicker options) {
         FileType[] fileTypes = {
                 new FileType("Images", "image/*", ".png", ".jpg", ".gif"),
                 new FileType("Text", "text/plain"),
                 new FileType("Text", "text/plain", (String[]) null),
                 new FileType(null, "application/zip", ".zip")
         };
+        options.setAllowedFileTypes(fileTypes);
 
         String jsonToContain = """
                 "types": [
@@ -237,8 +323,54 @@ class LfeJsParameterHandlerTest {
                 """;
 
         assertThatJsonContains(
-                () -> handler.mapToCreateFileRequest(aString, fileTypes),
+                mapToJsonUsingHandler(options),
                 jsonToContain
+        );
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"  "})
+    void mapToJson_createFileOptions_withNullOrEmptySuggestedName_doesNotIncludeItTest(String notValidSuggestedName) {
+        OptionsCreateFile options = new OptionsCreateFile();
+        options.setSuggestedName(notValidSuggestedName);
+
+        assertThatJsonDoesNotContain(
+                mapToJsonUsingHandler(options),
+                "\"suggestedName\":"
+        );
+    }
+
+    @Test
+    void mapToJson_createFileOptions_withSuggestedName_includesItTest() {
+        OptionsCreateFile options = new OptionsCreateFile();
+        options.setSuggestedName("FileName.txt");
+
+        assertThatJsonContains(
+                mapToJsonUsingHandler(options),
+                "\"suggestedName\": \"FileName.txt\""
+        );
+    }
+
+    @Test
+    void mapToJson_openFileOptions_withMultipleSelection_includeJsonPropertyTest() {
+        OptionsOpenFile options = new OptionsOpenFile();
+        options.setMultipleSelection(true);
+
+        assertThatJsonContains(
+                mapToJsonUsingHandler(options),
+                "\"multiple\": true"
+        );
+    }
+
+    @Test
+    void mapToJson_openFileOptions_withoutMultipleSelection_includeJsonPropertyTest() {
+        OptionsOpenFile options = new OptionsOpenFile();
+        options.setMultipleSelection(false);
+
+        assertThatJsonContains(
+                mapToJsonUsingHandler(options),
+                "\"multiple\": false"
         );
     }
 

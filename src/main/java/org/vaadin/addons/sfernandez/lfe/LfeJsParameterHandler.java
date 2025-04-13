@@ -6,8 +6,7 @@ import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import es.sfernandez.library4j.types.DataSize;
 import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
-import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
-import org.vaadin.addons.sfernandez.lfe.setup.FileType;
+import org.vaadin.addons.sfernandez.lfe.parameters.*;
 
 class LfeJsParameterHandler {
 
@@ -15,20 +14,35 @@ class LfeJsParameterHandler {
     private final JsonParameterParser jsonParser = new JsonParameterParser();
 
     //---- Methods ----
-    public JsonValue mapToCreateFileRequest(final String suggestedName, final FileType ... allowedFileTypes) {
+    public JsonValue mapToJson(OptionsCreateFile options) {
         JsonObject json = Json.createObject();
 
-        if(suggestedName != null && !suggestedName.isBlank())
-            json.put("suggestedName", suggestedName);
+        mapJsonProperties(json, options);
 
-        if(allowedFileTypes != null && allowedFileTypes.length > 0)
-            json.put("types", jsonParser.asJson(allowedFileTypes));
+        if(options.getSuggestedName() != null && !options.getSuggestedName().isBlank())
+            json.put("suggestedName", options.getSuggestedName());
 
         return json;
     }
 
-    public JsonValue mapToOpenFileRequest(final FileType ... allowedFileTypes) {
-        return jsonParser.asJson(allowedFileTypes);
+    public JsonValue mapToJson(OptionsOpenFile options) {
+        JsonObject json = Json.createObject();
+
+        mapJsonProperties(json, options);
+
+        json.put("multiple", options.isMultipleSelection());
+
+        return json;
+    }
+
+    private void mapJsonProperties(JsonObject json, OptionsHandlingFilePicker options) {
+        json.put("excludeAcceptAllOption", options.isExcludeAcceptAllOption());
+
+        if(options.getStartIn() != null)
+            json.put("startIn", options.getStartIn().getRepresentation());
+
+        if(options.getAllowedFileTypes() != null && options.getAllowedFileTypes().length > 0)
+            json.put("types", jsonParser.asJson(options.getAllowedFileTypes()));
     }
 
     public FileInfo mapToFileInfo(JsonValue json) {

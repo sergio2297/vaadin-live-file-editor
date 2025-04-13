@@ -1,4 +1,4 @@
-package org.vaadin.addons.sfernandez.lfe.setup;
+package org.vaadin.addons.sfernandez.lfe.parameters;
 
 public class FileType {
 

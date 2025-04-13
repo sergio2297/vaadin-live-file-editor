@@ -1,5 +1,7 @@
 package org.vaadin.addons.sfernandez.lfe.setup;
 
+import org.vaadin.addons.sfernandez.lfe.parameters.FileType;
+
 public class LfeSetup {
 
     //---- Attributes ----

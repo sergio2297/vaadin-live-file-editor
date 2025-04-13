@@ -7,6 +7,8 @@ import elemental.json.JsonValue;
 import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 import org.vaadin.addons.sfernandez.lfe.events.*;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
+import org.vaadin.addons.sfernandez.lfe.parameters.OptionsCreateFile;
+import org.vaadin.addons.sfernandez.lfe.parameters.OptionsOpenFile;
 import org.vaadin.addons.sfernandez.lfe.setup.LfeSetup;
 
 import java.time.LocalDateTime;
@@ -91,13 +93,22 @@ public class LiveFileEditor {
     }
 
     public CompletableFuture<Optional<FileInfo>> createFile() {
-        return createFile(null);
+        return createFile((String) null);
     }
 
     public CompletableFuture<Optional<FileInfo>> createFile(final String suggestedName) {
+        OptionsCreateFile options = new OptionsCreateFile();
+        options.setExcludeAcceptAllOption(true);
+        options.setAllowedFileTypes(setup.getAllowedFileTypes());
+        options.setSuggestedName(suggestedName);
+
+        return createFile(options);
+    }
+
+    public CompletableFuture<Optional<FileInfo>> createFile(final OptionsCreateFile options) {
         assertIsWorking();
 
-        CompletableFuture<LfeCreateFileEvent> creating = operationHandler.treatCreateFileJsRequest(sendCreateFileJsRequest(suggestedName));
+        CompletableFuture<LfeCreateFileEvent> creating = operationHandler.treatCreateFileJsRequest(sendCreateFileJsRequest(options));
 
         creating.thenAccept(observer::notifyCreateFileEvent);
         creating.thenAccept(this::updateState);
@@ -109,17 +120,25 @@ public class LiveFileEditor {
         return creating.thenApply(LfeCreateFileEvent::fileInfo);
     }
 
-    private CompletableFuture<JsonValue> sendCreateFileJsRequest(final String suggestedName) {
+    private CompletableFuture<JsonValue> sendCreateFileJsRequest(final OptionsCreateFile options) {
         return attachment.getElement()
                 .executeJs("return await createFile($0);",
-                        jsParameterHandler.mapToCreateFileRequest(suggestedName, setup.getAllowedFileTypes()))
+                        jsParameterHandler.mapToJson(options))
                 .toCompletableFuture();
     }
 
     public CompletableFuture<Optional<FileInfo>> openFile() {
+        OptionsOpenFile options = new OptionsOpenFile();
+        options.setExcludeAcceptAllOption(true);
+        options.setAllowedFileTypes(setup.getAllowedFileTypes());
+
+        return openFile(options);
+    }
+
+    public CompletableFuture<Optional<FileInfo>> openFile(final OptionsOpenFile options) {
         assertIsWorking();
 
-        CompletableFuture<LfeOpenFileEvent> opening = operationHandler.treatOpenFileJsRequest(sendOpenFileJsRequest());
+        CompletableFuture<LfeOpenFileEvent> opening = operationHandler.treatOpenFileJsRequest(sendOpenFileJsRequest(options));
 
         opening.thenAccept(observer::notifyOpenFileEvent);
         opening.thenAccept(this::updateState);
@@ -131,10 +150,10 @@ public class LiveFileEditor {
         return opening.thenApply(LfeOpenFileEvent::fileInfo);
     }
 
-    private CompletableFuture<JsonValue> sendOpenFileJsRequest() {
+    private CompletableFuture<JsonValue> sendOpenFileJsRequest(OptionsOpenFile options) {
         return attachment.getElement()
                 .executeJs("return await openFile($0);",
-                        jsParameterHandler.mapToOpenFileRequest(setup.getAllowedFileTypes()))
+                        jsParameterHandler.mapToJson(options))
                 .toCompletableFuture();
     }
 
