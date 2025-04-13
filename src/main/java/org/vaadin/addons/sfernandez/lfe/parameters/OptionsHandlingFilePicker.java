@@ -51,6 +51,9 @@ public sealed abstract class OptionsHandlingFilePicker
     }
 
     public void setId(String id) {
+        if(id != null && id.length() > 32)
+            throw new IllegalArgumentException("Error. Id must not be larger than 32 characters");
+
         this.id = id;
     }
 

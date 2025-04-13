@@ -5,9 +5,18 @@ import org.vaadin.addons.sfernandez.lfe.parameters.FileType;
 public class LfeSetup {
 
     //---- Attributes ----
+    private boolean rememberLastDirectory = true;
     private FileType[] allowedFileTypes = new FileType[0];
 
     //---- Methods ----
+    public boolean isRememberLastDirectory() {
+        return rememberLastDirectory;
+    }
+
+    public void setRememberLastDirectory(boolean rememberOpenedDirectory) {
+        this.rememberLastDirectory = rememberOpenedDirectory;
+    }
+
     public FileType[] getAllowedFileTypes() {
         return allowedFileTypes;
     }

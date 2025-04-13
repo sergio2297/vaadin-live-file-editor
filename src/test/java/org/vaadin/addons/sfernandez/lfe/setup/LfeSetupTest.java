@@ -19,6 +19,20 @@ class LfeSetupTest {
 
     //---- Tests ----
     @Test
+    void rememberLastDirectory_isActive_byDefaultTest() {
+        LfeSetup setup = new LfeSetup();
+
+        assertThat(setup.isRememberLastDirectory()).isTrue();
+    }
+
+    @Test
+    void setRememberLastDirectory_WorksTest() {
+        setup.setRememberLastDirectory(false);
+
+        assertThat(setup.isRememberLastDirectory()).isFalse();
+    }
+
+    @Test
     void allFileTypes_areAllowed_byDefaultTest() {
         LfeSetup setup = new LfeSetup();
 

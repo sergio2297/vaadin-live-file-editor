@@ -8,17 +8,20 @@ import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
 import org.vaadin.addons.sfernandez.lfe.events.*;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
 import org.vaadin.addons.sfernandez.lfe.parameters.OptionsCreateFile;
+import org.vaadin.addons.sfernandez.lfe.parameters.OptionsHandlingFilePicker;
 import org.vaadin.addons.sfernandez.lfe.parameters.OptionsOpenFile;
 import org.vaadin.addons.sfernandez.lfe.setup.LfeSetup;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @JsModule("./src/live-file-editor.js")
 public class LiveFileEditor {
 
     //---- Attributes ----
+    private final String uuid = UUID.randomUUID().toString().substring(0, 32);
     private final Component attachment;
 
     private boolean isWorking = false;
@@ -92,6 +95,11 @@ public class LiveFileEditor {
             throw new LiveFileEditorException("Error. It's necessary to attach the attachment before using the LiveFileEditor.");
     }
 
+    private void prepareOptions(final OptionsHandlingFilePicker options) {
+        if(setup.isRememberLastDirectory())
+            options.setId(uuid.toString());
+    }
+
     public CompletableFuture<Optional<FileInfo>> createFile() {
         return createFile((String) null);
     }
@@ -107,6 +115,7 @@ public class LiveFileEditor {
 
     public CompletableFuture<Optional<FileInfo>> createFile(final OptionsCreateFile options) {
         assertIsWorking();
+        prepareOptions(options);
 
         CompletableFuture<LfeCreateFileEvent> creating = operationHandler.treatCreateFileJsRequest(sendCreateFileJsRequest(options));
 
@@ -137,6 +146,7 @@ public class LiveFileEditor {
 
     public CompletableFuture<Optional<FileInfo>> openFile(final OptionsOpenFile options) {
         assertIsWorking();
+        prepareOptions(options);
 
         CompletableFuture<LfeOpenFileEvent> opening = operationHandler.treatOpenFileJsRequest(sendOpenFileJsRequest(options));
 
