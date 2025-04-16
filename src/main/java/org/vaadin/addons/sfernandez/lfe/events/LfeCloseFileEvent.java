@@ -50,4 +50,12 @@ public class LfeCloseFileEvent
     public Optional<LfeError> error() {
         return Optional.ofNullable(error);
     }
+
+    @Override
+    public String toString() {
+        return "LfeCloseFileEvent{" +
+                "fileInfo=" + fileInfo +
+                ", error=" + error +
+                '}';
+    }
 }

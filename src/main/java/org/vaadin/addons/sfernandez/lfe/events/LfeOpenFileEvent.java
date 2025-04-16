@@ -51,4 +51,11 @@ public class LfeOpenFileEvent
         return Optional.ofNullable(error);
     }
 
+    @Override
+    public String toString() {
+        return "LfeOpenFileEvent{" +
+                "fileInfo=" + fileInfo +
+                ", error=" + error +
+                '}';
+    }
 }

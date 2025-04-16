@@ -47,4 +47,11 @@ public class LfeSaveFileEvent
         return Optional.ofNullable(error);
     }
 
+    @Override
+    public String toString() {
+        return "LfeSaveFileEvent{" +
+                "data='" + data + '\'' +
+                ", error=" + error +
+                '}';
+    }
 }

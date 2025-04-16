@@ -123,4 +123,15 @@ public class LfeState {
         result = 31 * result + Objects.hashCode(lastSaveData);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "LfeState{" +
+                "editorIsWorking=" + editorIsWorking +
+                ", autosaveIsWorking=" + autosaveIsWorking +
+                ", openedFile=" + openedFile +
+                ", lastSaveTime=" + lastSaveTime +
+                ", lastSaveData='" + lastSaveData + '\'' +
+                '}';
+    }
 }
