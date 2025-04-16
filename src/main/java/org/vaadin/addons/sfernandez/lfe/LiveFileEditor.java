@@ -96,6 +96,21 @@ public class LiveFileEditor {
             throw new LfeException("Error. It's necessary to attach the attachment before using the LiveFileEditor.");
     }
 
+    private void assertAttachmentIsReadyToSendJsRequest() {
+        if(!attachment.isVisible())
+            // If the attachment isn't visible, the JS request will be received at the Client side when it becomes visible again
+            throw new LfeException("Error. The attachment must be visible in order to execute this operation.\n" +
+                    "You can always create the lfe linking it to another attachment (e.g.: UI) that will be always visible," +
+                    "or at least at the moment when this operation is executed.");
+
+        if(attachment instanceof HasEnabled enabledAttachment && !enabledAttachment.isEnabled())
+            // If the attachment isn't enable, the JS request will be sent but the server side will never receive the response
+            // cause of: "Ignoring update for disabled return channel"
+            throw new LfeException("Error. The attachment must be enabled in order to execute this operation.\n" +
+                    "You can always create the lfe linking it to another attachment (e.g.: UI) that will be always enabled," +
+                    "or at least at the moment when this operation is executed.");
+    }
+
     private void prepareOptions(final OptionsHandlingFilePicker options) {
         if(setup.isRememberLastDirectory())
             options.setId(uuid);
@@ -131,6 +146,8 @@ public class LiveFileEditor {
     }
 
     private CompletableFuture<JsonValue> sendCreateFileJsRequest(final OptionsCreateFile options) {
+        assertAttachmentIsReadyToSendJsRequest();
+
         return attachment.getElement()
                 .executeJs("return await createFile($0);",
                         jsParameterHandler.mapToJson(options))
@@ -162,6 +179,8 @@ public class LiveFileEditor {
     }
 
     private CompletableFuture<JsonValue> sendOpenFileJsRequest(OptionsOpenFile options) {
+        assertAttachmentIsReadyToSendJsRequest();
+
         return attachment.getElement()
                 .executeJs("return await openFile($0);",
                         jsParameterHandler.mapToJson(options))
@@ -183,6 +202,8 @@ public class LiveFileEditor {
     }
 
     private CompletableFuture<JsonValue> sendCloseFileJsRequest() {
+        assertAttachmentIsReadyToSendJsRequest();
+
         return attachment.getElement()
                 .executeJs("return await closeFile();")
                 .toCompletableFuture();
@@ -203,6 +224,14 @@ public class LiveFileEditor {
                         ? Optional.empty()
                         : Optional.ofNullable(event.data())
         );
+    }
+
+    private CompletableFuture<JsonValue> sendSaveFileJsRequest(final String content) {
+        assertAttachmentIsReadyToSendJsRequest();
+
+        return attachment.getElement()
+                .executeJs("return saveFile($0)", content)
+                .toCompletableFuture();
     }
 
     void updateState() {
@@ -229,12 +258,6 @@ public class LiveFileEditor {
 
         if(!oldState.equals(state))
             observer.notifyStateChangeEvent(new LfeStateChangeEvent(state, oldState));
-    }
-
-    private CompletableFuture<JsonValue> sendSaveFileJsRequest(final String content) {
-        return attachment.getElement()
-                .executeJs("return saveFile($0)", content)
-                .toCompletableFuture();
     }
 
     public LfeState state() {
