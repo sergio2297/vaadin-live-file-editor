@@ -97,7 +97,7 @@ public class LiveFileEditor {
 
     private void prepareOptions(final OptionsHandlingFilePicker options) {
         if(setup.isRememberLastDirectory())
-            options.setId(uuid.toString());
+            options.setId(uuid);
     }
 
     public CompletableFuture<Optional<FileInfo>> createFile() {
