@@ -93,13 +93,14 @@ window.closeFile = async function() {
     if(!fileHandle) {
         return {
            "error": 'MissingFileError',
-           "message": "There isn't no file to close"
+           "message": "There is no file to close"
         }
     }
 
     try {
+        const file = getFileInfoAsJson(fileHandle);
         fileHandle = null;
-        return {}
+        return file;
     } catch (err) {
         const json = {};
         json.error = err.name;
