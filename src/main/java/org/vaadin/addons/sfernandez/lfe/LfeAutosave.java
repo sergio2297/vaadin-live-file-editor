@@ -2,7 +2,7 @@ package org.vaadin.addons.sfernandez.lfe;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.vaadin.flow.component.UI;
-import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LfeException;
 import org.vaadin.addons.sfernandez.lfe.events.LfeAutosaveWorkingStateChangeEvent;
 import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
 import org.vaadin.addons.sfernandez.lfe.setup.LfeAutosaveSetup;
@@ -85,17 +85,17 @@ public final class LfeAutosave {
      * <p>Depending on the {@link LfeAutosaveSetup} the UI poll interval will be altered to be enough to execute the
      * autosave process properly. When the autosave process is stopped then the poll interval will be restored.</p>
      * <p>If it is already running, then the current process is stopped before starting a new one.</p>
-     * @throws LiveFileEditorException if no setup has been added or if the attached editor {@link LiveFileEditor#isNotWorking()}
+     * @throws LfeException if no setup has been added or if the attached editor {@link LiveFileEditor#isNotWorking()}
      */
     public void start() {
         if(!isEnabled)
             return;
 
         if(setup == null)
-            throw new LiveFileEditorException("Error. It's necessary to setup the autosave before stating it.");
+            throw new LfeException("Error. It's necessary to setup the autosave before stating it.");
 
         if(editor.isNotWorking())
-            throw new LiveFileEditorException("Error. Editor must be working before starting autosave.");
+            throw new LfeException("Error. Editor must be working before starting autosave.");
 
         if(isWorking())
             stop();
@@ -165,7 +165,7 @@ public final class LfeAutosave {
         private void catchEditorAttachedUi() {
             Optional<UI> ui = editor.getAttachment().getUI();
             if(ui.isEmpty())
-                throw new LiveFileEditorException("Error. It's not possible to autosave content due to the editor isn't attached to an UI.");
+                throw new LfeException("Error. It's not possible to autosave content due to the editor isn't attached to an UI.");
 
             this.ui = ui.get();
         }

@@ -1,7 +1,7 @@
 package org.vaadin.addons.sfernandez.lfe.setup;
 
 import org.vaadin.addons.sfernandez.lfe.LfeAutosave;
-import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LfeException;
 
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -97,7 +97,7 @@ public class LfeAutosaveSetup {
 
         /**
          * @return a new {@link LfeAutosaveSetup}
-         * @throws LiveFileEditorException if frequency or dataToSaveSupplier are null
+         * @throws LfeException if frequency or dataToSaveSupplier are null
          */
         public LfeAutosaveSetup build() {
             validateBuilding();
@@ -107,13 +107,13 @@ public class LfeAutosaveSetup {
 
         private void validateBuilding() {
             if(frequency == null)
-                throw new LiveFileEditorException("Error. Autosave frequency must not be null.");
+                throw new LfeException("Error. Autosave frequency must not be null.");
 
             if(frequency.isNegative() || frequency.isZero())
-                throw new LiveFileEditorException("Error. Frequency must be positive.");
+                throw new LfeException("Error. Frequency must be positive.");
 
             if(dataToSaveSupplier == null)
-                throw new LiveFileEditorException("Error. A data to save supplier is mandatory.");
+                throw new LfeException("Error. A data to save supplier is mandatory.");
         }
     }
 

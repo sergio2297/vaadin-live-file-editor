@@ -2,9 +2,10 @@ package org.vaadin.addons.sfernandez.lfe;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasEnabled;
 import com.vaadin.flow.component.dependency.JsModule;
 import elemental.json.JsonValue;
-import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LfeException;
 import org.vaadin.addons.sfernandez.lfe.events.*;
 import org.vaadin.addons.sfernandez.lfe.parameters.FileInfo;
 import org.vaadin.addons.sfernandez.lfe.parameters.OptionsCreateFile;
@@ -92,7 +93,7 @@ public class LiveFileEditor {
 
     private void assertIsWorking() {
         if(isNotWorking())
-            throw new LiveFileEditorException("Error. It's necessary to attach the attachment before using the LiveFileEditor.");
+            throw new LfeException("Error. It's necessary to attach the attachment before using the LiveFileEditor.");
     }
 
     private void prepareOptions(final OptionsHandlingFilePicker options) {

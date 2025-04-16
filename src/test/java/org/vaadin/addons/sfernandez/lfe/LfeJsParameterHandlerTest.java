@@ -10,7 +10,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opentest4j.TestAbortedException;
-import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LfeException;
 import org.vaadin.addons.sfernandez.lfe.parameters.*;
 
 import java.util.regex.Matcher;
@@ -271,13 +271,13 @@ class LfeJsParameterHandlerTest {
         options.setAllowedFileTypes(
                 new FileType[] { fileTypeWithNullMimeType }
         );
-        assertThrows(LiveFileEditorException.class, () -> mapToJsonUsingHandler(options));
+        assertThrows(LfeException.class, () -> mapToJsonUsingHandler(options));
 
         FileType fileTypeWithEmptyMimeType = new FileType("Text", "   ", ".txt");
         options.setAllowedFileTypes(
                 new FileType[] { fileTypeWithEmptyMimeType }
         );
-        assertThrows(LiveFileEditorException.class, () -> mapToJsonUsingHandler(options));
+        assertThrows(LfeException.class, () -> mapToJsonUsingHandler(options));
     }
 
     @ParameterizedTest

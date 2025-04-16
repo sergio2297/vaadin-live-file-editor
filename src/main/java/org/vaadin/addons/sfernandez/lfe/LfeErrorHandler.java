@@ -4,7 +4,7 @@ import elemental.json.JsonObject;
 import elemental.json.JsonString;
 import elemental.json.JsonValue;
 import org.vaadin.addons.sfernandez.lfe.error.LfeError;
-import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LfeException;
 
 import java.util.Optional;
 
@@ -32,7 +32,7 @@ class LfeErrorHandler {
      * @param json Json which contains an {@link LfeError.Type.Creating} error
      * @return a {@link LfeError} of type {@link LfeError.Type.Creating} or {@link LfeError.Type.Other#UNKNOWN} if the
      * error code isn't recognized
-     * @throws LiveFileEditorException if no error is in the Json {@link #thereIsAnError(JsonValue)}
+     * @throws LfeException if no error is in the Json {@link #thereIsAnError(JsonValue)}
      */
     public LfeError creatingFileErrorOf(JsonValue json) {
         assertThereIsAnErrorIn(json);
@@ -48,7 +48,7 @@ class LfeErrorHandler {
      * @param json Json which contains an {@link LfeError.Type.Opening} error
      * @return a {@link LfeError} of type {@link LfeError.Type.Opening} or {@link LfeError.Type.Other#UNKNOWN} if the
      * error code isn't recognized
-     * @throws LiveFileEditorException if no error is in the Json {@link #thereIsAnError(JsonValue)}
+     * @throws LfeException if no error is in the Json {@link #thereIsAnError(JsonValue)}
      */
     public LfeError openingFileErrorOf(JsonValue json) {
         assertThereIsAnErrorIn(json);
@@ -64,7 +64,7 @@ class LfeErrorHandler {
      * @param json Json which contains an {@link LfeError.Type.Closing} error
      * @return a {@link LfeError} of type {@link LfeError.Type.Closing} or {@link LfeError.Type.Other#UNKNOWN} if the
      * error code isn't recognized
-     * @throws LiveFileEditorException if no error is in the Json {@link #thereIsAnError(JsonValue)}
+     * @throws LfeException if no error is in the Json {@link #thereIsAnError(JsonValue)}
      */
     public LfeError closingFileErrorOf(JsonValue json) {
         assertThereIsAnErrorIn(json);
@@ -80,7 +80,7 @@ class LfeErrorHandler {
      * @param json Json which contains an {@link LfeError.Type.Saving} error
      * @return a {@link LfeError} of type {@link LfeError.Type.Saving} or {@link LfeError.Type.Other#UNKNOWN} if the
      * error code isn't recognized
-     * @throws LiveFileEditorException if no error is in the Json {@link #thereIsAnError(JsonValue)}
+     * @throws LfeException if no error is in the Json {@link #thereIsAnError(JsonValue)}
      */
     public LfeError savingFileErrorOf(JsonValue json) {
         assertThereIsAnErrorIn(json);
@@ -95,7 +95,7 @@ class LfeErrorHandler {
         if(thereIsAnError(json))
             return;
 
-        throw new LiveFileEditorException("Error. '" + json + "' does not represent an error.");
+        throw new LfeException("Error. '" + json + "' does not represent an error.");
     }
 
     private <TYPE_ERROR extends Enum<TYPE_ERROR> & LfeError.Type>

@@ -5,11 +5,10 @@ import com.vaadin.flow.server.Command;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LfeException;
 import org.vaadin.addons.sfernandez.lfe.events.LfeSaveFileEvent;
 import org.vaadin.addons.sfernandez.lfe.setup.LfeAutosaveSetup;
 
-import javax.swing.text.html.Option;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.Optional;
@@ -119,7 +118,7 @@ class LfeAutosaveTest {
     void start_withoutSetup_throwsAnExceptionTest() {
         autosave.setup(null);
 
-        assertThrows(LiveFileEditorException.class, autosave::start);
+        assertThrows(LfeException.class, autosave::start);
     }
 
     @Test
@@ -127,7 +126,7 @@ class LfeAutosaveTest {
         LfeAutosave autosave = new LfeAutosave(mockedEditor);
         autosave.setEnabled(true);
 
-        assertThrows(LiveFileEditorException.class, autosave::start);
+        assertThrows(LfeException.class, autosave::start);
     }
 
     @Test
@@ -135,14 +134,14 @@ class LfeAutosaveTest {
         Mockito.when(mockedEditor.isNotWorking()).thenReturn(true);
         Mockito.when(mockedEditor.isWorking()).thenReturn(false);
 
-        assertThrows(LiveFileEditorException.class, autosave::start);
+        assertThrows(LfeException.class, autosave::start);
     }
 
     @Test
     void start_whenEditorAttachment_hasNotGotAnUI_throwsExceptionTest() {
         Mockito.when(mockedUi.getUI()).thenReturn(Optional.empty());
 
-        assertThrows(LiveFileEditorException.class, autosave::start);
+        assertThrows(LfeException.class, autosave::start);
     }
 
     @Test

@@ -5,7 +5,7 @@ import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import es.sfernandez.library4j.types.DataSize;
-import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LfeException;
 import org.vaadin.addons.sfernandez.lfe.parameters.*;
 
 class LfeJsParameterHandler {
@@ -73,7 +73,7 @@ class LfeJsParameterHandler {
 
         private JsonValue asJson(FileType fileType) {
             if(fileType.getMimeType() == null || fileType.getMimeType().isBlank())
-                throw new LiveFileEditorException("Error. MIME type can't be null");
+                throw new LfeException("Error. MIME type can't be null");
 
             JsonObject object = Json.createObject();
 

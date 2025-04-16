@@ -2,7 +2,7 @@ package org.vaadin.addons.sfernandez.lfe.setup;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LfeException;
 
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -35,18 +35,18 @@ class LfeAutosaveSetupTest {
 
     @Test
     void build_withNullFrequency_throwsExceptionTest() {
-        assertThrows(LiveFileEditorException.class, () -> builder.frequency(null).build());
+        assertThrows(LfeException.class, () -> builder.frequency(null).build());
     }
 
     @Test
     void build_withNegativeOrZeroFrequency_throwsExceptionTest() {
-        assertThrows(LiveFileEditorException.class, () -> builder.frequency(Duration.ofMillis(-1)).build());
-        assertThrows(LiveFileEditorException.class, () -> builder.frequency(Duration.ofMillis(0)).build());
+        assertThrows(LfeException.class, () -> builder.frequency(Duration.ofMillis(-1)).build());
+        assertThrows(LfeException.class, () -> builder.frequency(Duration.ofMillis(0)).build());
     }
 
     @Test
     void build_withNullDataToSaveSupplier_throwsExceptionTest() {
-        assertThrows(LiveFileEditorException.class, () -> builder.dataToSaveSupplier(null).build());
+        assertThrows(LfeException.class, () -> builder.dataToSaveSupplier(null).build());
     }
 
     @Test

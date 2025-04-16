@@ -8,7 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.vaadin.addons.sfernandez.lfe.error.LfeError;
-import org.vaadin.addons.sfernandez.lfe.error.LiveFileEditorException;
+import org.vaadin.addons.sfernandez.lfe.error.LfeException;
 
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -99,7 +99,7 @@ class LfeErrorHandlerTest {
     @MethodSource("extractErrorOfOperations")
     void operationErrorOf_jsonThatDoesNotRepresentAnError_throwsExceptionTest(ExtractErrorOperation operation) {
         for(JsonValue json : JSONS_THAT_ARENT_ERRORS)
-            assertThrows(LiveFileEditorException.class, () -> operation.extractErrorOf(errorHandler, json));
+            assertThrows(LfeException.class, () -> operation.extractErrorOf(errorHandler, json));
     }
 
     @ParameterizedTest
